@@ -1,6 +1,7 @@
 import discord
 import json
 import os
+import glob
 #if not exists('members.json'):
 
 intents = discord.Intents.all()
@@ -12,7 +13,7 @@ with open('token.txt') as file:
 
 textChannels  = []
 voiceChannels = []
-guildDict = {}
+guildFiles = glob.glob('*.json')
 
 def initialize():
     for channel in client.get_all_channels():
@@ -31,9 +32,15 @@ def initialize():
                 memberDict[str(member.id)] = []
             with open(guildFile,'w') as outfile:
                 json.dump(memberDict, outfile)
-            
-        with open(guildFile) as json_file:
-            guildDict[str(guild.id)] = json.load(json_file)
+        else:
+            with open(guildFile,'r') as jsonFile:
+                guildDict = json.load(jsonFile)
+            for member in guild.members:
+                if member not in guildDict:
+                    print(member)
+                    guildDict[member.id] = []
+            with open(guildFile,'w') as outfile:
+                json.dump(guildDict, outfile)
 
 @client.event
 async def on_ready():
@@ -55,33 +62,61 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    gameList = guildDict[str(message.guild.id)][str(message.author.id)]
+    guildFiles = glob.glob('*.json')
+    
+    author = str(message.author.id)
+    # This should only populate gameLists for guilds the user is in.
+    gameLists = []
+    if str(message.channel.type) == 'private':
+        for guildFile in guildFiles:
+            with open(guildFile) as json_file:
+                guildDict = json.load(json_file)
+            if author in guildDict:
+                gameLists.append(guildDict[author])
+    else:
+        with open(str(message.guild.id)+'.json') as json_file:
+            guildDict = json.load(json_file)
+        gameLists.append(guildDict[author])
 
     if message.content.startswith('$add'):
         games = message.content[4:].split(',')
-        for game in games:
-            game = game.strip()
-            if game not in gameList:
-                gameList.append(game)
-                await message.channel.send('Added: ' + game)
-            else:
-                await message.channel.send(game + " Already in list.")
+        for gameList in gameLists:
+            for game in games:
+                game = game.strip()
+                if game not in gameList:
+                    gameList.append(game)
+                    await message.channel.send('Added: ' + game)
+                else:
+                    await message.channel.send(game + " Already in list.")
 
     if message.content.startswith('$remove'):
         games = message.content[7:].split(',')
         for game in games:
             game = game.strip()
-            if game in gameList:
-                gameList.remove(game)
-                await message.channel.send('Removed: ' + game)
-            else:
-                await message.channel.send(game + " Not in list.")
+            for gameList in gameLists:
+                if game in gameList:
+                    gameList.remove(game)
+                    await message.channel.send('Removed: ' + game)
+                else:
+                    await message.channel.send(game + " Not in list.")
 
     if message.content.startswith('$list'):
-        await message.channel.send('All games: ' + ', '.join(gameList))
+        for gameList in gameLists:
+            await message.channel.send('All games: ' + ', '.join(gameList))
 
-    with open(str(message.guild.id) + '.json', 'w') as outFile:
-        json.dump(guildDict[str(message.guild.id)], outFile)
+    if str(message.channel.type) == 'private':
+        for ind in range(len(gameLists)):
+            with open(guildFiles[ind], 'r') as outFile:
+                guildDict = json.load(outFile)
+                guildDict[author] = gameLists[ind]
+            with open(guildFiles[ind], 'w') as outFile:
+                json.dump(guildDict, outFile)
+    else:
+        with open(str(message.guild.id) + '.json', 'r') as outFile:
+            guildDict = json.load(outFile)
+            guildDict[author] = gameLists[0]
+        with open(guildFiles[ind], 'w') as outFile:
+            json.dump(guildDict, outFile)
 
 client.run(TOKEN)
 
