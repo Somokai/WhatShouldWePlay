@@ -6,6 +6,10 @@ import os
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
 
+with open('token.txt') as f:
+    TOKEN = f.read()
+
+
 textChannels  = []
 voiceChannels = []
 guildDict = {}
@@ -79,7 +83,7 @@ async def on_message(message):
     with open(str(message.guild.id) + '.json') as outFile:
         json.dump(guildDict[str(message.guild.id)], outFile)
 
-client.run('OTU5MjYzNjUwNzAxNTA4NjM4.YkZV5A.U0Hm-ZxpBYxGQqF7cLLsAKlKaBk')
+client.run(TOKEN)
 
 
 
