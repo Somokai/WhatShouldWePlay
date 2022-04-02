@@ -6,8 +6,8 @@ import os
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
 
-with open('token.txt') as f:
-    TOKEN = f.read()
+with open('token.txt') as file:
+    TOKEN = file.read()
 
 
 textChannels  = []
@@ -80,7 +80,7 @@ async def on_message(message):
     if message.content.startswith('$list'):
         await message.channel.send('All games: ' + ', '.join(gameList))
 
-    with open(str(message.guild.id) + '.json') as outFile:
+    with open(str(message.guild.id) + '.json', 'w') as outFile:
         json.dump(guildDict[str(message.guild.id)], outFile)
 
 client.run(TOKEN)
