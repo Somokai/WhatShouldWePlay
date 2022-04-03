@@ -51,13 +51,13 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
+      
+    commands = ['$add', '$remove', '$list']
 
-    if not message.content.startswith('$'):
+    msg = str(message.content)
+    if msg.split(' ')[0] not in commands:
         return
-
-    elif message.content.startswith('$hello'):
-        await message.channel.send('Hello!')
-
+      
     guildFiles = glob.glob('*.json')
 
     author = str(message.author.id)
@@ -65,12 +65,12 @@ async def on_message(message):
     gameLists = []
     if str(message.channel.type) == 'private':
         for guildFile in guildFiles:
-            with open(guildFile) as json_file:
+            with open(guildFile,'r') as json_file:
                 guildDict = json.load(json_file)
             if author in guildDict:
                 gameLists.append(guildDict[author])
     else:
-        with open(str(message.guild.id)+'.json') as json_file:
+        with open(str(message.guild.id)+'.json','r') as json_file:
             guildDict = json.load(json_file)
         gameLists.append(guildDict[author])
 
@@ -111,7 +111,29 @@ async def on_message(message):
         with open(str(message.guild.id) + '.json', 'r') as outFile:
             guildDict = json.load(outFile)
             guildDict[author] = gameLists[0]
-        with open(guildFiles[ind], 'w') as outFile:
+        with open(guildFiles[0], 'w') as outFile:
             json.dump(guildDict, outFile)
 
+@client.event
+async def on_member_update(prev, cur):
+
+    guildFile = str(cur.guild.id) + '.json'
+    if hasattr(cur.activity, 'name'):
+        game = cur.activity.name
+    else:
+        game = str(cur.activity)
+
+    if game == 'None':
+        return
+
+    with open(guildFile, 'r') as jsonFile:
+        guildDict = json.load(jsonFile)
+        if game not in guildDict[str(cur.id)]:
+            guildDict[str(cur.id)].append(game)
+            print('Added: ' + game +  ' to ' +  str(cur) +'\'s game list in ' + str(cur.guild))
+
+    with open(guildFile, 'w') as outFile:
+        json.dump(guildDict, outFile)
+
 client.run(os.getenv('TOKEN'))
+
