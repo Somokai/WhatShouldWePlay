@@ -148,4 +148,24 @@ async def on_member_update(prev, cur):
         json.dump(guildDict, outFile)
 
 client.run(TOKEN)
+
+    guildFile = str(cur.guild.id) + '.json'
+    if hasattr(cur.activity, 'name'):
+        game = cur.activity.name
+    else:
+        game = str(cur.activity)
+
+    if game == 'None':
+        return
+
+    with open(guildFile, 'r') as jsonFile:
+        guildDict = json.load(jsonFile)
+        if game not in guildDict[str(cur.id)]:
+            guildDict[str(cur.id)].append(game)
+            print('Added: ' + game +  ' to ' +  str(cur) +'\'s game list in ' + str(cur.guild))
+
+    with open(guildFile, 'w') as outFile:
+        json.dump(guildDict, outFile)
+
+client.run(TOKEN)
 client.run(os.getenv('TOKEN'))
