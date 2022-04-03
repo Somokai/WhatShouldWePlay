@@ -2,18 +2,15 @@ import discord
 import json
 import os
 import glob
-#if not exists('members.json'):
+# if not exists('members.json'):
 
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
 
-with open('token.txt') as file:
-    TOKEN = file.read()
-
-
-textChannels  = []
+textChannels = []
 voiceChannels = []
 guildFiles = glob.glob('*.json')
+
 
 def initialize():
     for channel in client.get_all_channels():
@@ -21,7 +18,7 @@ def initialize():
             textChannels.append(channel)
         elif str(channel.type) == 'voice':
             voiceChannels.append(channel)
-    
+
     for guild in client.guilds:
         print(guild.id)
         guildFile = str(guild.id)+'.json'
@@ -30,17 +27,18 @@ def initialize():
             for member in guild.members:
                 print(member)
                 memberDict[str(member.id)] = []
-            with open(guildFile,'w') as outfile:
+            with open(guildFile, 'w') as outfile:
                 json.dump(memberDict, outfile)
         else:
-            with open(guildFile,'r') as jsonFile:
+            with open(guildFile, 'r') as jsonFile:
                 guildDict = json.load(jsonFile)
             for member in guild.members:
                 if member not in guildDict:
                     print(member)
                     guildDict[member.id] = []
-            with open(guildFile,'w') as outfile:
+            with open(guildFile, 'w') as outfile:
                 json.dump(guildDict, outfile)
+
 
 @client.event
 async def on_ready():
@@ -48,27 +46,20 @@ async def on_ready():
     print('Initializing')
     initialize()
 
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-
-    if message.content.startswith('$hello'):
-        await message.channel.send('Hello ' + str(message.author)[:-5] + '!')
-
 
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
-
-    commands = ['$add', '$remove']
+      
+    commands = ['$add', '$remove', '$list']
 
     msg = str(message.content)
     if msg.split(' ')[0] not in commands:
         return
+      
     guildFiles = glob.glob('*.json')
-    
+
     author = str(message.author.id)
     # This should only populate gameLists for guilds the user is in.
     gameLists = []
@@ -144,7 +135,5 @@ async def on_member_update(prev, cur):
     with open(guildFile, 'w') as outFile:
         json.dump(guildDict, outFile)
 
-client.run(TOKEN)
-
-
+client.run(os.getenv('TOKEN'))
 
