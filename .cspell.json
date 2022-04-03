@@ -1,0 +1,12 @@
+{
+    "version": "0.2",
+    "language": "en",
+    "dictionaries": [
+        "companies ",
+        "softwareTerms",
+        "python"
+    ],
+    "ignorePaths": [],
+    "ignoreWords": [],
+    "words": []
+}
