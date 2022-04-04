@@ -39,5 +39,5 @@ to create a discord bot application and generate a token for the bot to use.
 2. Run the Bot.
 
     ```cmd
-    py DiscordBot.py
+    py src/main.py
     ```
