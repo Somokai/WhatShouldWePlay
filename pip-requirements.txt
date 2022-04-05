@@ -7,6 +7,8 @@
 # 
 # https://pypi.org/project/discord.py/
 # https://pypi.org/project/flake8/
+# https://pypi.org/project/python-dotenv/
 
 discord.py==1.7.3
 flake8
+python-dotenv==0.20.0

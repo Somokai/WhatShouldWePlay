@@ -1,139 +1,104 @@
 import discord
 import json
 import os
-import glob
-# if not exists('members.json'):
+import sys
+import logging
+from datetime import date
+from os.path import isfile
+from dotenv import load_dotenv
 
-intents = discord.Intents.all()
-client = discord.Client(intents=intents)
+class Player(object):
 
-textChannels = []
-voiceChannels = []
-guildFiles = glob.glob('*.json')
+    _TEMPLATE = {"games" : [], "blacklist" : []}
 
-
-def initialize():
-    for channel in client.get_all_channels():
-        if str(channel.type) == 'text':
-            textChannels.append(channel)
-        elif str(channel.type) == 'voice':
-            voiceChannels.append(channel)
-
-    for guild in client.guilds:
-        print(guild.id)
-        guildFile = str(guild.id)+'.json'
-        if not os.path.exists(guildFile):
-            memberDict = {}
-            for member in guild.members:
-                print(member)
-                memberDict[str(member.id)] = []
-            with open(guildFile, 'w') as outfile:
-                json.dump(memberDict, outfile)
+    def __init__(self, user):
+        self.user = user
+        self.record = self.load_record(user)
+    
+    def load_record(self, user):
+        if not isfile(f'{user.id}.json'):
+            return self.create_record(user)
         else:
-            with open(guildFile, 'r') as jsonFile:
-                guildDict = json.load(jsonFile)
-            for member in guild.members:
-                if member not in guildDict:
-                    print(member)
-                    guildDict[member.id] = []
-            with open(guildFile, 'w') as outfile:
-                json.dump(guildDict, outfile)
+            with open(f'{user.id}.json', 'r+') as json_file:
+                return json.load(json_file)     
 
+    def create_record(self, user):
+        with open(f'{user.id}.json', 'a') as json_record:
+            json.dump(self._TEMPLATE, json_record)
+        logging.info(f'Created a gamelist file for {user}... {user.id}.json')
+        return self._TEMPLATE
 
-@client.event
-async def on_ready():
-    print('We have logged in as {0.user}'.format(client))
-    print('Initializing')
-    initialize()
-
-
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-      
-    commands = ['$add', '$remove', '$list']
-
-    msg = str(message.content)
-    if msg.split(' ')[0] not in commands:
-        return
-      
-    guildFiles = glob.glob('*.json')
-
-    author = str(message.author.id)
-    # This should only populate gameLists for guilds the user is in.
-    gameLists = []
-    if str(message.channel.type) == 'private':
-        for guildFile in guildFiles:
-            with open(guildFile,'r') as json_file:
-                guildDict = json.load(json_file)
-            if author in guildDict:
-                gameLists.append(guildDict[author])
-    else:
-        with open(str(message.guild.id)+'.json','r') as json_file:
-            guildDict = json.load(json_file)
-        gameLists.append(guildDict[author])
-
-    if message.content.startswith('$add'):
-        games = message.content[4:].split(',')
-        for gameList in gameLists:
-            for game in games:
-                game = game.strip()
-                if game not in gameList:
-                    gameList.append(game)
-                    await message.channel.send('Added: ' + game)
-                else:
-                    await message.channel.send(game + " Already in list.")
-
-    if message.content.startswith('$remove'):
-        games = message.content[7:].split(',')
+    def save_record(self):
+        with open(f'tmp_{self.user.id}.json', 'w') as json_record:
+            json.dump(self.record, json_record)
+        
+        os.remove(f'{self.user.id}.json')
+        os.rename(f'tmp_{self.user.id}.json', f'{self.user.id}.json')
+        logging.info(f'User {self.user}\'s record has been saved')
+    
+    def add_games(self, games):
+        print(self.record)
+        print(self.record["games"])
+        self.record["games"] = list(set(games + self.record["games"]))
+        self.save_record()
+        logging.info(f'{", ".join(games)} successfully added to {self.user}\'s record.')
+    
+    def remove_games(self, games):
         for game in games:
-            game = game.strip()
-            for gameList in gameLists:
-                if game in gameList:
-                    gameList.remove(game)
-                    await message.channel.send('Removed: ' + game)
-                else:
-                    await message.channel.send(game + " Not in list.")
+            if game in self.record["games"]: 
+                self.record["games"].remove(game)
+        
+        self.save_record()
+        logging.info(f'{", ".join(games)} successfully removed from {self.user}\'s record.')
 
-    if message.content.startswith('$list'):
-        for gameList in gameLists:
-            await message.channel.send('All games: ' + ', '.join(gameList))
+    def get_games(self):
+        return self.record["games"]
 
-    if str(message.channel.type) == 'private':
-        for ind in range(len(gameLists)):
-            with open(guildFiles[ind], 'r') as outFile:
-                guildDict = json.load(outFile)
-                guildDict[author] = gameLists[ind]
-            with open(guildFiles[ind], 'w') as outFile:
-                json.dump(guildDict, outFile)
-    else:
-        with open(str(message.guild.id) + '.json', 'r') as outFile:
-            guildDict = json.load(outFile)
-            guildDict[author] = gameLists[0]
-        with open(guildFiles[0], 'w') as outFile:
-            json.dump(guildDict, outFile)
+class WhatshouldWePlayBot(discord.Client):
 
-@client.event
-async def on_member_update(prev, cur):
+    def __init__(self):
+        self = super().__init__(intents = discord.Intents.default())
 
-    guildFile = str(cur.guild.id) + '.json'
-    if hasattr(cur.activity, 'name'):
-        game = cur.activity.name
-    else:
-        game = str(cur.activity)
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s %(message)s]",
+            handlers=[
+                logging.FileHandler(f'{date.today()}.log'),
+                logging.StreamHandler(sys.stdout)
+            ])
 
-    if game == 'None':
+    async def on_ready():
+        logging.INFO(f'Logged in as user {client.user}')
+
+    async def on_message(self, message):
+        if message.author == client.user:
+            return
+
+        cmd, msg = message.content.split(' ', 1)
+
+        if cmd not in ['$add', '$remove', '$list']:
+            return
+
+        logging.info(f'Message Received from {message.author}: {cmd} {msg}')
+
+        author = message.author
+
+        if cmd == '$add':
+            games = [game.strip() for game in msg.split(',')]
+            user = Player(author)
+            user.add_games(games)
+            await message.channel.send(f'{", ".join(games)} added to {author}\'s record')
+        elif cmd == '$remove':
+            games = [game.strip() for game in msg.split(',')]
+            user = Player(author)
+            user.remove_games(games)
+            await message.channel.send(f'{", ".join(games)} removed from {author}\'s record')
+        elif cmd == '$list':
+            user = Player(author)
+            await message.channel.send(f'{", ".join(user.get_games())}')
         return
 
-    with open(guildFile, 'r') as jsonFile:
-        guildDict = json.load(jsonFile)
-        if game not in guildDict[str(cur.id)]:
-            guildDict[str(cur.id)].append(game)
-            print('Added: ' + game +  ' to ' +  str(cur) +'\'s game list in ' + str(cur.guild))
-
-    with open(guildFile, 'w') as outFile:
-        json.dump(guildDict, outFile)
-
-client.run(os.getenv('TOKEN'))
-
+if __name__ == '__main__':
+    load_dotenv()    
+    client = WhatshouldWePlayBot()
+    client.run(os.getenv('TOKEN'))
