@@ -8,5 +8,5 @@
     ],
     "ignorePaths": [],
     "ignoreWords": [],
-    "words": []
+    "words": ["dotenv"]
 }

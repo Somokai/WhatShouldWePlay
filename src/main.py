@@ -7,20 +7,21 @@ from datetime import date
 from os.path import isfile
 from dotenv import load_dotenv
 
+
 class Player(object):
 
-    _TEMPLATE = {"games" : [], "blacklist" : []}
+    _TEMPLATE = {"games": [], "blacklist": []}
 
     def __init__(self, user):
         self.user = user
         self.record = self.load_record(user)
-    
+
     def load_record(self, user):
         if not isfile(f'{user.id}.json'):
             return self.create_record(user)
         else:
             with open(f'{user.id}.json', 'r+') as json_file:
-                return json.load(json_file)     
+                return json.load(json_file)
 
     def create_record(self, user):
         with open(f'{user.id}.json', 'a') as json_record:
@@ -31,33 +32,36 @@ class Player(object):
     def save_record(self):
         with open(f'tmp_{self.user.id}.json', 'w') as json_record:
             json.dump(self.record, json_record)
-        
+
         os.remove(f'{self.user.id}.json')
         os.rename(f'tmp_{self.user.id}.json', f'{self.user.id}.json')
         logging.info(f'User {self.user}\'s record has been saved')
-    
+
     def add_games(self, games):
         print(self.record)
         print(self.record["games"])
         self.record["games"] = list(set(games + self.record["games"]))
         self.save_record()
-        logging.info(f'{", ".join(games)} successfully added to {self.user}\'s record.')
-    
+        logging.info(
+            f'{", ".join(games)} successfully added to {self.user}\'s record.')
+
     def remove_games(self, games):
         for game in games:
-            if game in self.record["games"]: 
+            if game in self.record["games"]:
                 self.record["games"].remove(game)
-        
+
         self.save_record()
-        logging.info(f'{", ".join(games)} successfully removed from {self.user}\'s record.')
+        logging.info(
+            f'{", ".join(games)} successfully removed from {self.user}\'s record.')
 
     def get_games(self):
         return self.record["games"]
 
+
 class WhatshouldWePlayBot(discord.Client):
 
     def __init__(self):
-        self = super().__init__(intents = discord.Intents.default())
+        self = super().__init__(intents=discord.Intents.default())
 
         logging.basicConfig(
             level=logging.INFO,
@@ -97,20 +101,21 @@ class WhatshouldWePlayBot(discord.Client):
             user = Player(author)
             await message.channel.send(f'{", ".join(user.get_games())}')
         return
-    
+
     async def on_member_update(prev, cur):
-        
+
         if prev.activities == cur.activities:
             return
-        
+
         user = Player(cur)
 
         if cur.activity.type is discord.ActivityType.playing:
             user.add_games([cur.activity.name])
-            logging.info(f'User starting playing {cur.activity.name}. Added to gamelist')
+            logging.info(
+                f'User starting playing {cur.activity.name}. Added to gamelist')
 
 
 if __name__ == '__main__':
-    load_dotenv()    
+    load_dotenv()
     client = WhatshouldWePlayBot()
     client.run(os.getenv('TOKEN'))
