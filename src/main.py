@@ -38,8 +38,6 @@ class Player(object):
         logging.info(f'User {self.user}\'s record has been saved')
 
     def add_games(self, games):
-        print(self.record)
-        print(self.record["games"])
         self.record["games"] = list(set(games + self.record["games"]))
         self.save_record()
         logging.info(
