@@ -97,6 +97,18 @@ class WhatshouldWePlayBot(discord.Client):
             user = Player(author)
             await message.channel.send(f'{", ".join(user.get_games())}')
         return
+    
+    async def on_member_update(prev, cur):
+        
+        if prev.activities == cur.activities:
+            return
+        
+        user = Player(cur)
+
+        if cur.activity.type is discord.ActivityType.playing:
+            user.add_games([cur.activity.name])
+            logging.info(f'User starting playing {cur.activity.name}. Added to gamelist')
+
 
 if __name__ == '__main__':
     load_dotenv()    
