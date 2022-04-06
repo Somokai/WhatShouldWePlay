@@ -103,7 +103,10 @@ class WhatshouldWePlayBot(discord.Client):
             await message.channel.send(f'{", ".join(games)} removed from {author}\'s record')
         elif cmd == '$list':
             user = Player(author)
-            await message.channel.send(f'{", ".join(user.get_games())}')
+            msg = f'{", ".join(user.get_games())}'
+            if msg == '':
+                msg = "No games in library."
+            await message.channel.send(msg)
         return
 
     async def on_member_update(self, prev, cur):
