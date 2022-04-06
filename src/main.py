@@ -59,7 +59,7 @@ class Player(object):
 class WhatshouldWePlayBot(discord.Client):
 
     def __init__(self):
-        self = super().__init__(intents=discord.Intents.default())
+        self = super().__init__(intents=discord.Intents.all())
 
         logging.basicConfig(
             level=logging.INFO,
@@ -103,7 +103,10 @@ class WhatshouldWePlayBot(discord.Client):
             await message.channel.send(f'{", ".join(games)} removed from {author}\'s record')
         elif cmd == '$list':
             user = Player(author)
-            await message.channel.send(f'{", ".join(user.get_games())}')
+            msg = f'{", ".join(user.get_games())}'
+            if msg == '':
+                msg = "No games in library."
+            await message.channel.send(msg)
         return
 
     async def on_member_update(self, prev, cur):
@@ -112,6 +115,8 @@ class WhatshouldWePlayBot(discord.Client):
             return
 
         user = Player(cur)
+        if not hasattr(cur.activity, 'type'):
+            return
 
         if cur.activity.type is discord.ActivityType.playing:
             user.add_games([cur.activity.name])
