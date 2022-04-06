@@ -7,34 +7,41 @@ from datetime import date
 from os.path import isfile
 from dotenv import load_dotenv
 
+load_dotenv()
+
 
 class Player(object):
 
+    _RECORD_BASE_PATH = os.getenv('RECORD_BASE_PATH', "")
     _TEMPLATE = {"games": [], "blacklist": []}
 
     def __init__(self, user):
         self.user = user
-        self.record = self.load_record(user)
+        self.record = Player._load_record(
+            f'{Player._RECORD_BASE_PATH}{user.id}.json')
 
-    def load_record(self, user):
-        if not isfile(f'{user.id}.json'):
-            return self.create_record(user)
+    def _load_record(path):
+        if not isfile(path):
+            return Player._create_record(path)
         else:
-            with open(f'{user.id}.json', 'r+') as json_file:
+            with open(path, 'r+') as json_file:
                 return json.load(json_file)
 
-    def create_record(self, user):
-        with open(f'{user.id}.json', 'a') as json_record:
-            json.dump(self._TEMPLATE, json_record)
-        logging.info(f'Created a gamelist file for {user}... {user.id}.json')
-        return self._TEMPLATE
+    def _create_record(path):
+        with open(path, 'a') as json_record:
+            json.dump(Player._TEMPLATE, json_record)
+        logging.info(f'Record Created: {os.path.basename(path)}')
+        return Player._TEMPLATE
 
     def save_record(self):
-        with open(f'tmp_{self.user.id}.json', 'w') as json_record:
+        tmp_path = f'{Player._RECORD_BASE_PATH}tmp_{self.user.id}.json'
+        path = f'{Player._RECORD_BASE_PATH}{self.user.id}.json'
+
+        with open(tmp_path, 'w') as json_record:
             json.dump(self.record, json_record)
 
-        os.remove(f'{self.user.id}.json')
-        os.rename(f'tmp_{self.user.id}.json', f'{self.user.id}.json')
+        os.remove(path)
+        os.rename(tmp_path, path)
         logging.info(f'User {self.user}\'s record has been saved')
 
     def add_games(self, games):
@@ -59,6 +66,8 @@ class Player(object):
 class WhatshouldWePlayBot(discord.Client):
 
     def __init__(self):
+        intents = discord.Intents.default()
+        intents.presences = True
         self = super().__init__(intents=discord.Intents.default())
 
         logging.basicConfig(
@@ -120,6 +129,5 @@ class WhatshouldWePlayBot(discord.Client):
 
 
 if __name__ == '__main__':
-    load_dotenv()
     client = WhatshouldWePlayBot()
     client.run(os.getenv('TOKEN'))
