@@ -69,14 +69,20 @@ class WhatshouldWePlayBot(discord.Client):
                 logging.StreamHandler(sys.stdout)
             ])
 
-    async def on_ready():
-        logging.INFO(f'Logged in as user {client.user}')
+    async def on_ready(self):
+        logging.info(f'Logged in as user {self.user.name}')
 
     async def on_message(self, message):
-        if message.author == client.user:
+        if message.author == self.user:
             return
 
-        cmd, msg = message.content.split(' ', 1)
+        tempCmd = message.content.split(' ', 1)
+        if len(tempCmd) != 1:
+            cmd, msg = tempCmd
+        else:
+            cmd = tempCmd[0]
+            msg = 'NONE'
+        cmd = cmd.lower()
 
         if cmd not in ['$add', '$remove', '$list']:
             return
@@ -100,7 +106,7 @@ class WhatshouldWePlayBot(discord.Client):
             await message.channel.send(f'{", ".join(user.get_games())}')
         return
 
-    async def on_member_update(prev, cur):
+    async def on_member_update(self, prev, cur):
 
         if prev.activities == cur.activities:
             return
