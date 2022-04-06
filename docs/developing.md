@@ -41,3 +41,26 @@ to create a discord bot application and generate a token for the bot to use.
     ```cmd
     py src/main.py
     ```
+
+## Environment Variables
+
+Multiple environment variables exist to allow the developer to customize the
+the setup and execution of the bot. The following environment variables should
+be added to the .env file.
+
+### TOKEN
+
+The token used to start the discord bot.
+
+Required? Yes
+
+```TOKEN=<TOKEN>```
+
+### RECORD_BASE_PATH
+
+The path that all json records will be stored at. This can be the relative path
+or full path.
+
+Required? No; Default=""
+
+```RECORD_BASE_PATH=<PATH>```
