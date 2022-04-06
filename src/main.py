@@ -59,7 +59,7 @@ class Player(object):
 class WhatshouldWePlayBot(discord.Client):
 
     def __init__(self):
-        self = super().__init__(intents=discord.Intents.default())
+        self = super().__init__(intents=discord.Intents.all())
 
         logging.basicConfig(
             level=logging.INFO,
@@ -115,6 +115,8 @@ class WhatshouldWePlayBot(discord.Client):
             return
 
         user = Player(cur)
+        if not hasattr(cur.activity, 'type'):
+            return
 
         if cur.activity.type is discord.ActivityType.playing:
             user.add_games([cur.activity.name])
