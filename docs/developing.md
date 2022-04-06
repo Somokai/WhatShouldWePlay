@@ -58,8 +58,9 @@ Required? Yes
 
 ### RECORD_BASE_PATH
 
-The path that all json records will be stored at.
+The path that all json records will be stored at. This can be the relative path
+or full path.
 
-Required? No Defaul="" (Local)
+Required? No; Default=""
 
-```RECORD_BASE_PATH=```
+```RECORD_BASE_PATH=<PATH>```
