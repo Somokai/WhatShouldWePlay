@@ -31,7 +31,7 @@ class Player(object):
         with open(path, 'a') as json_record:
             json.dump(Player._TEMPLATE, json_record)
         logging.info(f'Record Created: {os.path.basename(path)}')
-        return Player._TEMPLATE
+        return Player._TEMPLATE.copy()
 
     def save_record(self):
         tmp_path = f'{Player._RECORD_BASE_PATH}tmp_{self.user.id}.json'
@@ -117,7 +117,6 @@ class WhatshouldWePlayBot(discord.Client):
         return
 
     async def on_member_update(self, prev, cur):
-
         if prev.activities == cur.activities:
             return
 
