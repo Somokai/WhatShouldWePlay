@@ -8,5 +8,8 @@
     ],
     "ignorePaths": [],
     "ignoreWords": [],
-    "words": ["dotenv"]
+    "words": [
+        "dotenv",
+        "unblacklist"
+    ]
 }
