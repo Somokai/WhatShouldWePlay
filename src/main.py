@@ -10,6 +10,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+class Filter(object):
+    def __init__(self, level):
+        self.__level = level
+
+    def filter(self, logRecord):
+        return logRecord.levelno <= self.__level
+
+
 class Player(object):
 
     _RECORD_BASE_PATH = os.getenv('RECORD_BASE_PATH', "")
@@ -85,14 +93,6 @@ class WhatshouldWePlayBot(discord.Client):
     def __init__(self):
         self = super().__init__(intents=discord.Intents.all())
 
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s [%(levelname)s %(message)s]",
-            handlers=[
-                logging.FileHandler(f'{date.today()}.log'),
-                logging.StreamHandler(sys.stdout)
-            ])
-
     async def on_ready(self):
         logging.info(f'Logged in as user {self.user.name}')
 
@@ -164,5 +164,14 @@ class WhatshouldWePlayBot(discord.Client):
 
 
 if __name__ == '__main__':
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setLevel(logging.ERROR)
+    stream_handler.addFilter(Filter(logging.ERROR))
+    file_handler = logging.FileHandler(f'{date.today()}.log')
+
+    logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s",
+                        level=logging.INFO,
+                        handlers=[stream_handler, file_handler])
+
     client = WhatshouldWePlayBot()
     client.run(os.getenv('TOKEN'))
