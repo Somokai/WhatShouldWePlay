@@ -12,3 +12,4 @@
 discord.py==1.7.3
 flake8
 python-dotenv==0.20.0
+discordwebhook
