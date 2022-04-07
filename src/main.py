@@ -62,6 +62,23 @@ class Player(object):
     def get_games(self):
         return self.record["games"]
 
+    def add_blacklist_games(self, games):
+        self.record["blacklist"] = list(set(games + self.record["blacklist"]))
+        self.save_record()
+        logging.info(
+            f'{", ".join(games)} added to {self.user}\'s blacklist.')
+
+    def remove_blacklist_games(self, games):
+        for game in games:
+            if game in self.record["blacklist"]:
+                self.record["blacklist"].remove(game)
+        self.save_record()
+        logging.info(
+            f'{", ".join(games)} removed from {self.user}\'s blacklist')
+
+    def get_blacklist(self):
+        return self.record["blacklist"]
+
 
 class WhatshouldWePlayBot(discord.Client):
 
@@ -91,7 +108,7 @@ class WhatshouldWePlayBot(discord.Client):
             msg = 'NONE'
         cmd = cmd.lower()
 
-        if cmd not in ['$add', '$remove', '$list']:
+        if cmd not in ['$add', '$remove', '$list', '$blacklist', '$unblacklist', '$illuminate']:
             return
 
         logging.info(f'Message Received from {message.author}: {cmd} {msg}')
@@ -113,6 +130,22 @@ class WhatshouldWePlayBot(discord.Client):
             msg = f'{", ".join(user.get_games())}'
             if msg == '':
                 msg = "No games in library."
+            await message.channel.send(msg)
+        elif cmd == '$blacklist':
+            games = [game.strip() for game in msg.split(',')]
+            user = Player(author)
+            user.add_blacklist_games(games)
+            await message.channel.send(f'{", ".join(games)} added to {author}\'s blacklist')
+        elif cmd == '$unblacklist':
+            games = [game.strip() for game in msg.split(',')]
+            user = Player(author)
+            user.remove_blacklist_games(games)
+            await message.channel.send(f'{", ".join(games)} removed from {author}\'s blacklist')
+        elif cmd == '$illuminate':
+            user = Player(author)
+            msg = f'{", ".join(user.get_blacklist())}'
+            if msg == '':
+                msg = "No games in blacklist."
             await message.channel.send(msg)
         return
 
