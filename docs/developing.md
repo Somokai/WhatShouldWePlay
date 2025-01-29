@@ -20,7 +20,7 @@ running.
 3. Install all dependencies.
 
     ```cmd
-    pip install --upgrade -r pip-requirements.txt
+    pip install -e .[dev]
     ```
 
 4. Follow the guide at [https://www.freecodecamp.org/news/create-a-discord-bot-with-python/]

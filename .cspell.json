@@ -6,10 +6,13 @@
         "softwareTerms",
         "python"
     ],
+    "allowCompoundWords": true,
     "ignorePaths": [],
     "ignoreWords": [],
     "words": [
         "dotenv",
-        "unblacklist"
+        "levelno",
+        "unblacklist",
+        "whatshouldweplay"
     ]
 }

@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+env:
+  python-version: 3.12
+  node-version: 19
+  markdown-version: 0.39.0
+  cspell-version: 5.20.0
+
+jobs:
+  run:
+    name: Run CI Tests
+
+    runs-on: ${{ matrix.os }}    
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python ${{ env.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.python-version }}
+          cache: pip
+
+      - name: Install pip dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade -e .[dev]
+
+      - name: Setup Node ${{ env.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install npm Dependencies
+        run: |
+          npm install -g markdownlint-cli@${{ env.markdown-version }}
+          npm install -g cspell@${{ env.cspell-version }}
+
+      - name: Run ruff linter
+        if: success() || failure()
+        run: ruff check --output-format=github .
+
+      - name: Run ruff formatter
+        if: success() || failure()
+        run: ruff format --check .
+
+      - name: Run markdownlint
+        if: success() || failure()
+        run: markdownlint "**/*.md"
+
+      - name: Run cspell
+        if: success() || failure()
+        run: cspell -c .cspell.json "**/*.py" "**/*.md"
+
+      - name: Run Unit Tests
+        run: pytest
+      
