@@ -18,6 +18,7 @@ class Filter(object):
     def filter(self, logRecord):
         return logRecord.levelno <= self.__level
 
+
 class Player(object):
     _RECORD_BASE_PATH = os.getenv("RECORD_BASE_PATH", "")
     _TEMPLATE = {"games": [], "disallowlist": []}
@@ -83,13 +84,15 @@ class Player(object):
     def get_disallowlist(self):
         return self.record["disallowlist"]
 
+
 class WhatShouldWePlayBot(discord.Client):
     # These are the member id's for the bots, we ignore them for specific checks
     _MEMBER_IGNORE_LIST = [959263650701508638, 961433803484712960]
     _ignore_disallowlist = False
     _member_count = -1
+
     def __init__(self):
-        self = super().__init__(intents=discord.Intents.all())
+        super().__init__(intents=discord.Intents.all())
 
         stream_handler = logging.StreamHandler(sys.stdout)
         stream_handler.setLevel(logging.INFO)
@@ -247,7 +250,6 @@ class WhatShouldWePlayBot(discord.Client):
             json.dump(data, json_record)
 
     def get_player_count(self, games):
-        game_dict = {}
         with open("GameList.json", "r") as json_record:
             data = json.load(json_record)
             for game in games:
