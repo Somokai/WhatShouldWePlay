@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import logging
+import random
 from datetime import date
 from os.path import isfile
 from dotenv import load_dotenv
@@ -20,7 +21,7 @@ class Filter(object):
 
 class Player(object):
     _RECORD_BASE_PATH = os.getenv("RECORD_BASE_PATH", "")
-    _TEMPLATE = {"games": [], "blacklist": []}
+    _TEMPLATE = {"games": [], "disallowlist": []}
 
     def __init__(self, user):
         self.user = user
@@ -68,25 +69,41 @@ class Player(object):
     def get_games(self):
         return self.record["games"]
 
-    def add_blacklist_games(self, games):
-        self.record["blacklist"] = list(set(games + self.record["blacklist"]))
+    def add_disallowlist_games(self, games):
+        self.record["disallowlist"] = list(set(games + self.record["disallowlist"]))
         self.save_record()
-        logging.info(f'{", ".join(games)} added to {self.user}\'s blacklist.')
+        logging.info(f'{", ".join(games)} added to {self.user}\'s disallowlist.')
 
-    def remove_blacklist_games(self, games):
+    def remove_disallowlist_games(self, games):
         for game in games:
-            if game in self.record["blacklist"]:
-                self.record["blacklist"].remove(game)
+            if game in self.record["disallowlist"]:
+                self.record["disallowlist"].remove(game)
         self.save_record()
-        logging.info(f'{", ".join(games)} removed from {self.user}\'s blacklist')
+        logging.info(f'{", ".join(games)} removed from {self.user}\'s disallowlist')
 
-    def get_blacklist(self):
-        return self.record["blacklist"]
+    def get_disallowlist(self):
+        return self.record["disallowlist"]
 
 
 class WhatShouldWePlayBot(discord.Client):
+    # These are the member id's for the bots, we ignore them for specific checks
+    _MEMBER_IGNORE_LIST = [959263650701508638, 961433803484712960]
+    _ignore_disallowlist = False
+    _member_count = -1
+
     def __init__(self):
         super().__init__(intents=discord.Intents.all())
+
+        stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler.setLevel(logging.INFO)
+        stream_handler.addFilter(Filter(logging.INFO))
+        file_handler = logging.FileHandler(f"{date.today()}.log")
+
+        logging.basicConfig(
+            format="%(asctime)s [%(levelname)s] %(message)s",
+            level=logging.INFO,
+            handlers=[stream_handler, file_handler],
+        )
 
     async def on_ready(self):
         logging.info(f"Logged in as user {self.user.name}")
@@ -103,63 +120,90 @@ class WhatShouldWePlayBot(discord.Client):
             msg = "NONE"
         cmd = cmd.lower()
 
-        if cmd not in [
-            "$add",
-            "$remove",
-            "$list",
-            "$blacklist",
-            "$unblacklist",
-            "$illuminate",
-        ]:
-            return
-
         logging.info(f"Message Received from {message.author}: {cmd} {msg}")
 
         author = message.author
 
-        if cmd == "$add":
-            games = [game.strip() for game in msg.split(",")]
-            user = Player(author)
-            user.add_games(games)
-            await message.channel.send(
-                f'{", ".join(games)} added to {author}\'s record'
-            )
-        elif cmd == "$remove":
-            games = [game.strip() for game in msg.split(",")]
-            user = Player(author)
-            user.remove_games(games)
-            await message.channel.send(
-                f'{", ".join(games)} removed from {author}\'s record'
-            )
-        elif cmd == "$list":
-            user = Player(author)
-            msg = f'{", ".join(user.get_games())}'
-            if msg == "":
-                msg = "No games in library."
-            await message.channel.send(msg)
-        elif cmd == "$blacklist":
-            games = [game.strip() for game in msg.split(",")]
-            user = Player(author)
-            user.add_blacklist_games(games)
-            await message.channel.send(
-                f'{", ".join(games)} added to {author}\'s blacklist'
-            )
-        elif cmd == "$unblacklist":
-            games = [game.strip() for game in msg.split(",")]
-            user = Player(author)
-            user.remove_blacklist_games(games)
-            await message.channel.send(
-                f'{", ".join(games)} removed from {author}\'s blacklist'
-            )
-        elif cmd == "$illuminate":
-            user = Player(author)
-            msg = f'{", ".join(user.get_blacklist())}'
-            if msg == "":
-                msg = "No games in blacklist."
-            await message.channel.send(msg)
+        match cmd:
+            case "$add":
+                if msg == "NONE":
+                    await message.channel.send(
+                        "No game provided. Please add games using '$add Game1, Game2'"
+                    )
+                games = [game.strip() for game in msg.split(",")]
+                user = Player(author)
+                user.add_games(games)
+                self.add_games_to_gamelist(games)
+                await message.channel.send(
+                    f'{", ".join(games)} added to {author}\'s record'
+                )
+            case "$remove":
+                games = [game.strip() for game in msg.split(",")]
+                user = Player(author)
+                user.remove_games(games)
+                await message.channel.send(
+                    f'{", ".join(games)} removed from {author}\'s record'
+                )
+            case "$list":
+                user = Player(author)
+                out_msg = ", ".join(user.get_games())
+                if out_msg == "":
+                    out_msg = "No games in library."
+                await message.channel.send(out_msg)
+            case "$disallowlist":
+                games = [game.strip() for game in msg.split(",")]
+                user = Player(author)
+                user.add_disallowlist_games(games)
+                await message.channel.send(
+                    f'{", ".join(games)} added to {author}\'s disallowlist'
+                )
+            case "$undisallowlist":
+                games = [game.strip() for game in msg.split(",")]
+                user = Player(author)
+                user.remove_disallowlist_games(games)
+                await message.channel.send(
+                    f'{", ".join(games)} removed from {author}\'s disallowlist'
+                )
+            case "$suggest":
+                self._member_count = len(message.guild.members)
+                all_games = self.get_games_guild(message.guild)
+                if msg == "*":
+                    out_msg = self.suggest_game(
+                        message.guild, all_games, self._member_count
+                    )
+                elif msg.isdigit():
+                    out_msg = self.suggest_game(message.guild, all_games, int(msg))
+                else:
+                    out_msg = "Selected channel is not a voice channel or spelled incorrectly. Try again."
+                    for channel in message.guild.channels:
+                        if (
+                            msg == channel.name
+                            and channel.type == discord.ChannelType.voice
+                        ):
+                            out_msg = self.suggest_game_for_channel(channel, all_games)
+                if out_msg == []:
+                    out_msg = "No compatible games in library. Choose a different number of players, use '$suggest *', or set '$disallow false'."
+                await message.channel.send(out_msg)
+            case "$disallow":
+                if msg == "true":
+                    self._ignore_disallowlist = False
+                    await message.channel.send("Use disallowlists set to True.")
+                elif msg == "false":
+                    self._ignore_disallowlist = True
+                    await message.channel.send("Use disallowlists set to False.")
+            case "$set":
+                params = [input.strip() for input in msg.split(",")]
+                if len(params) == 2:
+                    game = params[0]
+                    count = params[1]
+                    self.set_player_count(game, count)
+                    out_msg = f'"Set max player count of {game} to {count}"'
+                else:
+                    out_msg = "Incorrect command set player count using '$set <game> <max_player_count>'"
+                await message.channel.send(out_msg)
         return
 
-    async def on_member_update(self, prev, cur):
+    async def on_presence_update(self, prev, cur):
         if prev.activities == cur.activities:
             return
 
@@ -170,21 +214,104 @@ class WhatShouldWePlayBot(discord.Client):
         if cur.activity.type is discord.ActivityType.playing:
             user.add_games([cur.activity.name])
             logging.info(
-                f"User starting playing {cur.activity.name}. Added to gamelist"
+                f"User starting playing {cur.activity.name}. Added to user gamelist"
             )
+            self.add_games_to_gamelist([cur.activity.name])
+
+    def add_games_to_gamelist(self, games):
+        with open("GameList.json", "r") as json_record:
+            data = json.load(json_record)
+
+            if isinstance(games, str):
+                games = [games]
+
+            for game in games:
+                if game not in data.keys():
+                    data[game] = -1
+
+        # Separate write to avoid appending
+        with open("GameList.json", "w") as json_record:
+            json.dump(data, json_record)
+
+    def set_player_count(self, game, count):
+        with open("GameList.json", "r") as json_record:
+            data = json.load(json_record)
+            if game in data.keys():
+                oldCount = data[game]
+                if oldCount == -1:
+                    logging.info(f"Max player count for {game} set to {count}.")
+                elif oldCount != count:
+                    logging.info(
+                        f"Max player count for {game} updated from {oldCount} to {count}."
+                    )
+            data[game] = count
+
+        with open("GameList.json", "w") as json_record:
+            json.dump(data, json_record)
+
+    def get_player_count(self, games):
+        with open("GameList.json", "r") as json_record:
+            data = json.load(json_record)
+            for game in games:
+                if game not in data.keys():
+                    data[game] = self._member_count
+                else:
+                    data[game] = int(data[game])
+                    if data[game] == -1:
+                        data[game] = self._member_count
+        return data
+
+    def get_games_guild(self, guild):
+        game_data = []
+        for member in guild.members:
+            if (
+                member.id not in self._MEMBER_IGNORE_LIST
+                and member.status == discord.Status.online
+            ):
+                player = Player(member)
+                game_data.append(player.get_games())
+        return game_data
+
+    def get_disallowlist_guild(self, guild):
+        disallowlist = []
+        for member in guild.members:
+            if (
+                member.id not in self._MEMBER_IGNORE_LIST
+                and member.status == discord.Status.online
+            ):
+                player = Player(member)
+                disallowlist += player.get_disallowlist()
+        return disallowlist
+
+    def suggest_game_for_channel(self, channel, player_data):
+        game = self.suggest_game(channel.guild, player_data, len(channel.members))
+        return game
+
+    def suggest_game(self, guild, game_data, player_count):
+        potential_games = []
+        for gamelist in game_data:
+            self.add_games_to_gamelist(gamelist)
+            potential_games.append(set(gamelist))
+
+        potential_games = set.intersection(*potential_games)
+        player_counts = self.get_player_count(potential_games)
+        disallowlist = self.get_disallowlist_guild(guild)
+        games = []
+        for game in potential_games:
+            count_ok = player_count == "*" or player_counts[game] >= int(player_count)
+            disallowlist_ok = game not in disallowlist or self._ignore_disallowlist
+            if count_ok and disallowlist_ok:
+                games.append(game)
+
+        # This is checking to see if there are any games in the list because
+        # random.choice breaks if you give it an empty list.
+        # Note: this is the correct way to check for an empty list apparently.
+        if not games:
+            return games
+        else:
+            return random.choice(games)
 
 
 if __name__ == "__main__":
-    stream_handler = logging.StreamHandler(sys.stdout)
-    stream_handler.setLevel(logging.ERROR)
-    stream_handler.addFilter(Filter(logging.ERROR))
-    file_handler = logging.FileHandler(f"{date.today()}.log")
-
-    logging.basicConfig(
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        level=logging.INFO,
-        handlers=[stream_handler, file_handler],
-    )
-
     client = WhatShouldWePlayBot()
     client.run(os.getenv("TOKEN"))
