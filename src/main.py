@@ -3,7 +3,6 @@ import json
 import os
 import sys
 import logging
-import numpy as np
 import random
 from datetime import date
 from os.path import isfile
