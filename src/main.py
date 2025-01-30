@@ -14,7 +14,7 @@ load_dotenv()
 class Player(object):
 
     _RECORD_BASE_PATH = os.getenv('RECORD_BASE_PATH', "")
-    _TEMPLATE = {"games": [], "blacklist": []}
+    _TEMPLATE = {"games": [], "disallowlist": []}
 
     def __init__(self, user):
         self.user = user
@@ -63,12 +63,14 @@ class Player(object):
     def get_games(self):
         return self.record["games"]
     
-    def get_blacklist(self):
-        return self.record["blacklist"]
+    def get_disallowlist(self):
+        return self.record["disallowlist"]
 
 class WhatshouldWePlayBot(discord.Client):
-    _MEMBER_IGNORE_LIST = [959263650701508638, 961433803484712960]
-    _ignore_blacklist = False
+    # These are the member id's for the bots, we ignore them for specific checks
+    _MEMBER_IGNORE_LIST = []#[959263650701508638, 961433803484712960]
+    _ignore_disallowlist = False
+    _member_count = -1
 
     def __init__(self):
         self = super().__init__(intents=discord.Intents.all())
@@ -96,59 +98,60 @@ class WhatshouldWePlayBot(discord.Client):
             msg = 'NONE'
         cmd = cmd.lower()
 
-        if cmd not in ['$add', '$remove', '$list', '$suggest', '$blacklist', '$set']:
-            return
-
         logging.info(f'Message Received from {message.author}: {cmd} {msg}')
 
         author = message.author
 
-        if cmd == '$add':
-            if msg == 'NONE':
-                await message.channel.send("No game provided. Please add games using '$add Game1, Game2'")
-            games = [game.strip() for game in msg.split(',')]
-            user = Player(author)
-            user.add_games(games)
-            self.add_games_to_gamelist(games)
-            await message.channel.send(f'{", ".join(games)} added to {author}\'s record')
-        elif cmd == '$remove':
-            games = [game.strip() for game in msg.split(',')]
-            user = Player(author)
-            user.remove_games(games)
-            await message.channel.send(f'{", ".join(games)} removed from {author}\'s record')
-        elif cmd == '$list':
-            user = Player(author)
-            out_msg = ", ".join(user.get_games())'
-            if out_msg == '':
-                out_msg = "No games in library."
-            await message.channel.send(out_msg)
-        elif cmd == '$suggest':
-            all_games = self.get_games_guild(message.guild)
-            if msg.isdigit():   
-                out_msg = self.suggest_game(message.guild, all_games, int(msg))
-            else: 
-                out_msg = "Selected channel is not a voice channel or spelled incorrectly. Try again."
-                for channel in message.guild.channels:
-                    if msg == channel.name and channel.type == discord.ChannelType.voice:
-                        out_msg = self.suggest_game_for_channel(channel, all_games)
-            if out_msg == []:
-                out_msg = "No compatible games in library. Choose a different number of players, use '$suggest *', or set '$blacklist false'."
-            await message.channel.send(out_msg)
-        elif cmd == '$blacklist':
-            if msg == 'true':
-                self._ignore_blacklist = False
-            elif msg == 'false':
-                self._ignore_blacklist = True  
-        elif cmd == '$set': 
-            params = [input.strip() for input in msg.split(',')]
-            if len(params) == 2:
-                game = params[0]
-                count = params[1]
-                self.set_player_count(game, count)
-                out_msg = f'"Set max player count of {game} to {count}"'
-            else: 
-                out_msg = "Incorrect command set player count using '$set <game> <max_player_count>'"
-            await message.channel.send(out_msg)
+        match cmd:
+            case '$add':
+                if msg == 'NONE':
+                    await message.channel.send("No game provided. Please add games using '$add Game1, Game2'")
+                games = [game.strip() for game in msg.split(',')]
+                user = Player(author)
+                user.add_games(games)
+                self.add_games_to_gamelist(games)
+                await message.channel.send(f'{", ".join(games)} added to {author}\'s record')
+            case '$remove':
+                games = [game.strip() for game in msg.split(',')]
+                user = Player(author)
+                user.remove_games(games)
+                await message.channel.send(f'{", ".join(games)} removed from {author}\'s record')
+            case '$list':
+                user = Player(author)
+                out_msg = ", ".join(user.get_games())
+                if out_msg == '':
+                    out_msg = "No games in library."
+                await message.channel.send(out_msg)
+            case '$suggest':
+                self._member_count = len(message.guild.members)
+                all_games = self.get_games_guild(message.guild)
+                if msg == '*':
+                    out_msg = self.suggest_game(message.guild, all_games, self._member_count)
+                elif msg.isdigit():   
+                    out_msg = self.suggest_game(message.guild, all_games, int(msg))
+                else: 
+                    out_msg = "Selected channel is not a voice channel or spelled incorrectly. Try again."
+                    for channel in message.guild.channels:
+                        if msg == channel.name and channel.type == discord.ChannelType.voice:
+                            out_msg = self.suggest_game_for_channel(channel, all_games)
+                if out_msg == []:
+                    out_msg = "No compatible games in library. Choose a different number of players, use '$suggest *', or set '$disallow false'."
+                await message.channel.send(out_msg)
+            case '$disallow':
+                if msg == 'true':
+                    self._ignore_disallowlist = False
+                elif msg == 'false':
+                    self._ignore_disallowlist = True  
+            case '$set': 
+                params = [input.strip() for input in msg.split(',')]
+                if len(params) == 2:
+                    game = params[0]
+                    count = params[1]
+                    self.set_player_count(game, count)
+                    out_msg = f'"Set max player count of {game} to {count}"'
+                else: 
+                    out_msg = "Incorrect command set player count using '$set <game> <max_player_count>'"
+                await message.channel.send(out_msg)
         return
 
     async def on_presence_update(self, prev, cur):
@@ -163,7 +166,7 @@ class WhatshouldWePlayBot(discord.Client):
             user.add_games([cur.activity.name])
             logging.info(
                 f'User starting playing {cur.activity.name}. Added to user gamelist')
-            self.add_games_to_gamelist(cur.activity.name)
+            self.add_games_to_gamelist([cur.activity.name])
 
     def add_games_to_gamelist(self, games):
         with open('GameList.json', 'r') as json_record:
@@ -174,7 +177,7 @@ class WhatshouldWePlayBot(discord.Client):
 
             for game in games:
                 if game not in data.keys():
-                    data[game] = 'nan'
+                    data[game] = -1
 
         # Separate write to avoid appending
         with open('GameList.json', 'w') as json_record:
@@ -185,7 +188,7 @@ class WhatshouldWePlayBot(discord.Client):
             data = json.load(json_record)
             if game in data.keys():
                 oldCount = data[game]
-                if oldCount == 'nan':
+                if oldCount == -1:
                     logging.info(f'Max player count for {game} set to {count}.')
                 elif oldCount != count:
                     logging.info(f'Max player count for {game} updated from {oldCount} to {count}.')
@@ -200,52 +203,53 @@ class WhatshouldWePlayBot(discord.Client):
             data = json.load(json_record)
             for game in games:
                 if game not in data.keys():
-                    data[game] = np.inf
+                    data[game] = self._member_count
                 else:
-                    if data[game] == 'nan':
-                        data[game] = np.inf
-                    else:
-                        data[game] = int(data[game])
+                    data[game] = int(data[game])
+                    if data[game] == -1:
+                        data[game] = self._member_count
         return data
 
     def get_games_guild(self, guild):
-        player_data = {}
+        game_data = []
         for member in guild.members:
-            if member.id not in self._ignore_list and member.status == discord.Status.online:
+            if member.id not in self._MEMBER_IGNORE_LIST and member.status == discord.Status.online:
                 player = Player(member)
-                player_data[member.id] = player.get_games()
-        return player_data
+                game_data.append(player.get_games())
+        return game_data
 
-    def get_blacklist_guild(self, guild):
-        blacklist = []
+    def get_disallowlist_guild(self, guild):
+        disallowlist = []
         for member in guild.members:
-            if member.id not in self._ignore_list and member.status == discord.Status.online:
+            if member.id not in self._MEMBER_IGNORE_LIST and member.status == discord.Status.online:
                 player = Player(member)
-                blacklist + player.get_blacklist()
-        return blacklist
+                disallowlist + player.get_disallowlist()
+        return disallowlist
 
     def suggest_game_for_channel(self, channel, player_data):
         game = suggest_game(channel.guild, player_data, len(channel.members))
         return game
 
-    def suggest_game(self, guild, player_data, player_count):
+    def suggest_game(self, guild, game_data, player_count):
         potential_games = []
-        for player in player_data.keys():
-            games = player_data[player]
-            self.add_games_to_gamelist(games)
-            potential_games.append(set(games))
+        for gamelist in game_data:
+            self.add_games_to_gamelist(gamelist)
+            potential_games.append(set(gamelist))
         
         potential_games = set.intersection(*potential_games)
-        
         player_counts = self.get_player_count(potential_games)
-        blacklist = self.get_blacklist_guild(guild)
+        disallowlist = self.get_disallowlist_guild(guild)
         games = []
         for game in potential_games:
             count_ok = player_count == '*' or player_counts[game] >= int(player_count)
-            blacklist_ok = game not in blacklist or self._ignore_blacklist
-            if count_ok and blacklist_ok:
+            disallowlist_ok = game not in disallowlist or self._ignore_disallowlist
+            if count_ok and disallowlist_ok:
                 games.append(game)
-        if isinstance(games, str):
+        
+        # This is checking to see if there are any games in the list because
+        # random.choice breaks if you give it an empty list. 
+        # Note: this is the correct way to check for an empty list apparently.
+        if not games:
             return games
         else:
             return random.choice(games)
