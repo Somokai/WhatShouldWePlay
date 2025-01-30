@@ -11,6 +11,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+class Filter(object):
+    def __init__(self, level):
+        self.__level = level
+
+    def filter(self, logRecord):
+        return logRecord.levelno <= self.__level
+
+
 class Player(object):
     _RECORD_BASE_PATH = os.getenv("RECORD_BASE_PATH", "")
     _TEMPLATE = {"games": [], "disallowlist": []}
@@ -18,34 +26,43 @@ class Player(object):
     def __init__(self, user):
         self.user = user
         self.record = Player._load_record(f"{Player._RECORD_BASE_PATH}{user.id}.json")
+        self.record = Player._load_record(f"{Player._RECORD_BASE_PATH}{user.id}.json")
 
     def _load_record(path):
         if not isfile(path):
             return Player._create_record(path)
         else:
             with open(path, "r+") as json_file:
+            with open(path, "r+") as json_file:
                 return json.load(json_file)
 
     def _create_record(path):
         with open(path, "a") as json_record:
+        with open(path, "a") as json_record:
             json.dump(Player._TEMPLATE, json_record)
+        logging.info(f"Record Created: {os.path.basename(path)}")
         logging.info(f"Record Created: {os.path.basename(path)}")
         return Player._TEMPLATE.copy()
 
     def save_record(self):
         tmp_path = f"{Player._RECORD_BASE_PATH}tmp_{self.user.id}.json"
         path = f"{Player._RECORD_BASE_PATH}{self.user.id}.json"
+        tmp_path = f"{Player._RECORD_BASE_PATH}tmp_{self.user.id}.json"
+        path = f"{Player._RECORD_BASE_PATH}{self.user.id}.json"
 
+        with open(tmp_path, "w") as json_record:
         with open(tmp_path, "w") as json_record:
             json.dump(self.record, json_record)
 
         os.remove(path)
         os.rename(tmp_path, path)
         logging.info(f"User {self.user}'s record has been saved")
+        logging.info(f"User {self.user}'s record has been saved")
 
     def add_games(self, games):
         self.record["games"] = list(set(games + self.record["games"]))
         self.save_record()
+        logging.info(f'{", ".join(games)} successfully added to {self.user}\'s record.')
         logging.info(f'{", ".join(games)} successfully added to {self.user}\'s record.')
 
     def remove_games(self, games):
@@ -57,6 +74,8 @@ class Player(object):
         logging.info(
             f'{", ".join(games)} successfully removed from {self.user}\'s record.'
         )
+            f'{", ".join(games)} successfully removed from {self.user}\'s record.'
+        )
 
     def get_games(self):
         return self.record["games"]
@@ -64,13 +83,27 @@ class Player(object):
     def get_disallowlist(self):
         return self.record["disallowlist"]
 
+    def add_blacklist_games(self, games):
+        self.record["blacklist"] = list(set(games + self.record["blacklist"]))
+        self.save_record()
+        logging.info(f'{", ".join(games)} added to {self.user}\'s blacklist.')
 
-class WhatshouldWePlayBot(discord.Client):
+    def remove_blacklist_games(self, games):
+        for game in games:
+            if game in self.record["blacklist"]:
+                self.record["blacklist"].remove(game)
+        self.save_record()
+        logging.info(f'{", ".join(games)} removed from {self.user}\'s blacklist')
+
+    def get_blacklist(self):
+        return self.record["blacklist"]
+
+
+class WhatShouldWePlayBot(discord.Client):
     # These are the member id's for the bots, we ignore them for specific checks
     _MEMBER_IGNORE_LIST = []  # [959263650701508638, 961433803484712960]
     _ignore_disallowlist = False
     _member_count = -1
-
     def __init__(self):
         self = super().__init__(intents=discord.Intents.all())
 
