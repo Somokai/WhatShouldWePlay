@@ -118,7 +118,7 @@ class WhatshouldWePlayBot(discord.Client):
             await message.channel.send(f'{", ".join(games)} removed from {author}\'s record')
         elif cmd == '$list':
             user = Player(author)
-            out_msg = f'{", ".join(user.get_games())}'
+            out_msg = ", ".join(user.get_games())'
             if out_msg == '':
                 out_msg = "No games in library."
             await message.channel.send(out_msg)
