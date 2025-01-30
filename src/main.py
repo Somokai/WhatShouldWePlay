@@ -124,7 +124,7 @@ class WhatshouldWePlayBot(discord.Client):
         elif cmd == '$suggest':
             all_games = self.get_games_guild(message.guild)
             out_msg = self.suggest_game(message.guild, all_games, msg)
-            if out_msg == '':
+            if out_msg == []:
                 out_msg = "No compatible games in library. Choose a different number of players, use '$suggest *', or set '$blacklist false'."
             await message.channel.send(out_msg)
         elif cmd == '$blacklist':
@@ -220,18 +220,11 @@ class WhatshouldWePlayBot(discord.Client):
         
         potential_games = []
         for player in player_data.keys():
-            for game in player_data[player]:
-                potential_games.append(game)
-        potential_games = set(potential_games)
+            games = player_data[player]
+            self.add_games_to_gamelist(games)
+            potential_games.append(set(games))
         
-        # Just in case these games are new to our database we add them
-        self.add_games_to_gamelist(potential_games)
-        
-        for player in player_data.keys():
-            for game in potential_games:
-                if game not in player_data[player]:
-                    potential_games.remove(game)
-                    break
+        potential_games = set.intersection(*potential_games)
         
         player_counts = self.get_player_count(potential_games)
         blacklist = self.get_blacklist_guild(guild)
