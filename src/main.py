@@ -4,6 +4,7 @@ import os
 import sys
 import logging
 import numpy as np
+import random
 from datetime import date
 from os.path import isfile
 from dotenv import load_dotenv
@@ -124,7 +125,7 @@ class WhatshouldWePlayBot(discord.Client):
         elif cmd == '$suggest':
             all_games = self.get_games_guild(message.guild)
             if msg.isdigit():   
-                out_msg = self.suggest_game(message.guild, all_games, toint(msg))
+                out_msg = self.suggest_game(message.guild, all_games, int(msg))
             else: 
                 out_msg = "Selected channel is not a voice channel or spelled incorrectly. Try again."
                 for channel in message.guild.channels:
@@ -168,8 +169,9 @@ class WhatshouldWePlayBot(discord.Client):
         with open('GameList.json', 'r') as json_record:
             data = json.load(json_record)
 
-            # Making sure that we don't iterate through letters in a string
-            games = list(set(games))
+            if isinstance(games, str):
+                games = [games]
+
             for game in games:
                 if game not in data.keys():
                     data[game] = 'nan'
@@ -223,7 +225,8 @@ class WhatshouldWePlayBot(discord.Client):
         return blacklist
 
     def suggest_game_for_channel(self, channel, player_data):
-        suggest_game(channel.guild, player_data, len(channel.members))
+        game = suggest_game(channel.guild, player_data, len(channel.members))
+        return game
 
     def suggest_game(self, guild, player_data, player_count):
         potential_games = []
@@ -242,7 +245,10 @@ class WhatshouldWePlayBot(discord.Client):
             blacklist_ok = game not in blacklist or self._ignore_blacklist
             if count_ok and blacklist_ok:
                 games.append(game)
-        return games
+        if isinstance(games, str):
+            return games
+        else:
+            return random.choice(games)
 
 if __name__ == '__main__':
     client = WhatshouldWePlayBot()
