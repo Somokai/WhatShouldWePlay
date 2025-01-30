@@ -83,18 +83,17 @@ class Player(object):
     def get_disallowlist(self):
         return self.record["disallowlist"]
 
-
 class WhatShouldWePlayBot(discord.Client):
     # These are the member id's for the bots, we ignore them for specific checks
-    _MEMBER_IGNORE_LIST = []  # [959263650701508638, 961433803484712960]
+    _MEMBER_IGNORE_LIST = [959263650701508638, 961433803484712960]
     _ignore_disallowlist = False
     _member_count = -1
     def __init__(self):
         self = super().__init__(intents=discord.Intents.all())
 
         stream_handler = logging.StreamHandler(sys.stdout)
-        stream_handler.setLevel(logging.ERROR)
-        stream_handler.addFilter(Filter(logging.ERROR))
+        stream_handler.setLevel(logging.INFO)
+        stream_handler.addFilter(Filter(logging.INFO))
         file_handler = logging.FileHandler(f"{date.today()}.log")
 
         logging.basicConfig(
@@ -185,8 +184,10 @@ class WhatShouldWePlayBot(discord.Client):
             case "$disallow":
                 if msg == "true":
                     self._ignore_disallowlist = False
+                    await message.channel.send("Use disallowlists set to True.")
                 elif msg == "false":
                     self._ignore_disallowlist = True
+                    await message.channel.send("Use disallowlists set to False.")
             case "$set":
                 params = [input.strip() for input in msg.split(",")]
                 if len(params) == 2:
@@ -277,11 +278,11 @@ class WhatShouldWePlayBot(discord.Client):
                 and member.status == discord.Status.online
             ):
                 player = Player(member)
-                disallowlist + player.get_disallowlist()
+                disallowlist += player.get_disallowlist()
         return disallowlist
 
     def suggest_game_for_channel(self, channel, player_data):
-        game = suggest_game(channel.guild, player_data, len(channel.members))
+        game = self.suggest_game(channel.guild, player_data, len(channel.members))
         return game
 
     def suggest_game(self, guild, game_data, player_count):
@@ -310,5 +311,5 @@ class WhatShouldWePlayBot(discord.Client):
 
 
 if __name__ == "__main__":
-    client = WhatshouldWePlayBot()
+    client = WhatShouldWePlayBot()
     client.run(os.getenv("TOKEN"))
