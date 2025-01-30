@@ -67,7 +67,7 @@ class Player(object):
         return self.record["blacklist"]
 
 class WhatshouldWePlayBot(discord.Client):
-    _ignore_list = [959263650701508638, 961433803484712960]
+    _MEMBER_IGNORE_LIST = [959263650701508638, 961433803484712960]
     _ignore_blacklist = False
 
     def __init__(self):
