@@ -123,7 +123,13 @@ class WhatshouldWePlayBot(discord.Client):
             await message.channel.send(out_msg)
         elif cmd == '$suggest':
             all_games = self.get_games_guild(message.guild)
-            out_msg = self.suggest_game(message.guild, all_games, msg)
+            if msg.isdigit():   
+                out_msg = self.suggest_game(message.guild, all_games, toint(msg))
+            else: 
+                out_msg = "Selected channel is not a voice channel or spelled incorrectly. Try again."
+                for channel in message.guild.channels:
+                    if msg == channel.name and channel.type == discord.ChannelType.voice:
+                        out_msg = self.suggest_game_for_channel(channel, all_games)
             if out_msg == []:
                 out_msg = "No compatible games in library. Choose a different number of players, use '$suggest *', or set '$blacklist false'."
             await message.channel.send(out_msg)
@@ -216,8 +222,10 @@ class WhatshouldWePlayBot(discord.Client):
                 blacklist + player.get_blacklist()
         return blacklist
 
+    def suggest_game_for_channel(self, channel, player_data):
+        suggest_game(channel.guild, player_data, len(channel.members))
+
     def suggest_game(self, guild, player_data, player_count):
-        
         potential_games = []
         for player in player_data.keys():
             games = player_data[player]
