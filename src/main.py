@@ -235,6 +235,9 @@ class WhatShouldWePlayBot(discord.Client):
             json.dump(data, json_record)
 
     def set_player_count(self, game, count):
+        if not os.path.exists("GameList.json"):
+            with open("GameList.json", "w") as json_record:
+                json.dump({}, json_record)
         with open("GameList.json", "r") as json_record:
             data = json.load(json_record)
             if game in data.keys():
