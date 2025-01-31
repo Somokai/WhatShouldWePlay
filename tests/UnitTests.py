@@ -53,7 +53,7 @@ class TestCommands(unittest.TestCase):
         # Checking for voice channel suggestions
         discord.post(content="$suggest General")
 
-        # Adding to disallowlist and checking for suggestions, should contain help message
+        # Adding to disallowlist and checking for suggestions
         discord.post(content="$undisallowlist Game 2")
         time.sleep(1)
         games = get_data()
@@ -98,7 +98,7 @@ class TestCommands(unittest.TestCase):
         player_games = player.get_games()
         self.assertEqual(sorted(games["games"]), sorted(player_games))
 
-        # Adding games
+        # Adding games to disallow list
         player.add_disallowlist_games(["Game1", "Game 2"])
         games = get_data()
         print(games)
