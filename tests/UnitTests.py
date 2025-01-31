@@ -32,7 +32,7 @@ class TestCommands(unittest.TestCase):
         games = get_data()
         self.assertEqual(sorted(games["games"]), sorted(["Game 2", "Game1"]))
 
-        # Adding to disallowlist and checking for suggestions
+        # Adding to disallowlist
         discord.post(content="$disallowlist Game 2")
         time.sleep(1)
         games = get_data()
@@ -41,13 +41,13 @@ class TestCommands(unittest.TestCase):
         # Checking that suggest * works
         discord.post(content="$suggest *")
 
-        # Just setting a player count to make sure the functionality works
+        # Checking setting a player works
         discord.post(content="$set Game 1, 3")
         time.sleep(1)
         game_data = get_gamelist()
         self.assertEqual(game_data["Game 1"], "3")
 
-        # Making sure suggestion doesn't fail
+        # Checking numerical suggstion works
         discord.post(content="$suggest 2")
 
         # Checking for voice channel suggestions
