@@ -8,10 +8,12 @@ import discord
 
 TEST_FILE_GAMELIST = "GameList.json"
 
+
 def get_data(member):
     with open(f"Players/{member.id}.json", "r") as jsonFile:
         games = json.load(jsonFile)
         return games
+
 
 def get_gamelist():
     if not os.path.isfile("GameList.json"):
@@ -20,6 +22,7 @@ def get_gamelist():
     with open(TEST_FILE_GAMELIST, "r") as jsonFile:
         games = json.load(jsonFile)
         return games
+
 
 @pytest_asyncio.fixture
 async def bot():
@@ -31,6 +34,7 @@ async def bot():
     yield bot
 
     await test.empty_queue()
+
 
 @pytest.fixture
 def user():
@@ -86,6 +90,7 @@ async def test_add_games(bot):
 
     # Make sure the list doesn't fail when there are no games
     assert await test.message("$list", member=member) is not None
+
 
 @pytest.mark.asyncio
 async def test_from_player():
