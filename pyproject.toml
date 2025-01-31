@@ -19,7 +19,7 @@ dev = [
   "ruff == 0.8.6",
   "pytest == 8.3.4",
   "coverage == 7.6.10", 
-  "discordwebhook == 1.0.3"
+  "dpytest==0.7.0",
 ]
 
 [tool.coverage.run]
