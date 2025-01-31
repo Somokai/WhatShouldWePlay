@@ -47,7 +47,7 @@ class TestCommands(unittest.TestCase):
         game_data = get_gamelist()
         self.assertEqual(game_data["Game 1"], "3")
 
-        # Checking numerical suggstion works
+        # Checking numerical suggestion works
         discord.post(content="$suggest 2")
 
         # Checking for voice channel suggestions
