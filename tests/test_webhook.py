@@ -70,7 +70,7 @@ async def test_add_games(bot):
     # Checking for voice channel suggestions
     assert await test.message("$suggest General", member=member) is not None
 
-    # Adding to disallowlist and checking for suggestions
+    # Check that removing from disallowlist works
     await test.message("$undisallowlist Game 2", member=member)
     games = get_data(member)
     assert games["disallowlist"] == []
