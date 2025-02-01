@@ -63,5 +63,6 @@ jobs:
         run: cspell -c .cspell.json "**/*.py" "**/*.md"
 
       - name: Run Unit Tests
+        env:
+          RECORD_BASE_PATH: 'Players/'
         run: pytest
-      

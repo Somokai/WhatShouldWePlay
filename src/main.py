@@ -35,6 +35,7 @@ class Player(object):
                 return json.load(json_file)
 
     def _create_record(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "a") as json_record:
             json.dump(Player._TEMPLATE, json_record)
         logging.info(f"Record Created: {os.path.basename(path)}")
@@ -44,7 +45,8 @@ class Player(object):
         tmp_path = f"{Player._RECORD_BASE_PATH}tmp_{self.user.id}.json"
         path = f"{Player._RECORD_BASE_PATH}{self.user.id}.json"
 
-        with open(tmp_path, "w") as json_record:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(tmp_path, "w+") as json_record:
             json.dump(self.record, json_record)
 
         os.remove(path)
@@ -93,7 +95,6 @@ class WhatShouldWePlayBot(discord.Client):
 
     def __init__(self):
         super().__init__(intents=discord.Intents.all())
-
         stream_handler = logging.StreamHandler(sys.stdout)
         stream_handler.setLevel(logging.INFO)
         stream_handler.addFilter(Filter(logging.INFO))
@@ -234,6 +235,9 @@ class WhatShouldWePlayBot(discord.Client):
             json.dump(data, json_record)
 
     def set_player_count(self, game, count):
+        if not os.path.exists("GameList.json"):
+            with open("GameList.json", "w") as json_record:
+                json.dump({}, json_record)
         with open("GameList.json", "r") as json_record:
             data = json.load(json_record)
             if game in data.keys():
