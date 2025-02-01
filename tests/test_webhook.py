@@ -121,7 +121,7 @@ async def test_from_player():
     games = get_data(member)
     assert sorted(games["disallowlist"]) == sorted(["Game 2", "Game1"])
 
-    # Make sure disallow works in get_data
+    # Make sure disallow works
     player_disallow = player.get_disallowlist()
     assert sorted(games["disallowlist"]) == sorted(player_disallow)
 
