@@ -33,7 +33,10 @@ class SteamAPI:
 
     def get_app_list(self):
         req = requests.get("http://api.steampowered.com/ISteamApps/GetAppList/v2/")
-        return json.loads(req.text)["applist"]["apps"]
+        if req.status_code != 200:
+            return []
+        else:
+            return json.loads(req.text)["applist"]["apps"]
 
     def get_games_by_id(self, appid):
         req = requests.get(

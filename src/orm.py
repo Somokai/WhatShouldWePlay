@@ -5,6 +5,7 @@ from pony.orm import (
     Required,
     Optional,
     db_session,
+    select,
 )
 
 db = Database()
@@ -17,15 +18,16 @@ class GameTable(db.Entity):
 
     @db_session
     def add_games(games: list[dict[str, str]]):
-        for game in games:
-            if not GameTable.get(appid=game["appid"]):
-                GameTable(appid=game["appid"], name=game["name"])
-        return
+        appids_set_cur = set(select(g.appid for g in GameTable)[:])
+        appids_set_new = set(g["appid"] for g in games)
+        games_to_add = appids_set_new - appids_set_cur
 
-    @db_session
-    def get_name_by_appid(appid: int) -> str:
-        game = GameTable.get(appid=appid)
-        return game.name
+        # Extract the games to add from the original games list
+        games_to_add_details = [game for game in games if game["appid"] in games_to_add]
+
+        for game in games_to_add_details:
+            GameTable(appid=game["appid"], name=game["name"])
+        return
 
 
 class Game(db.Entity):
@@ -95,4 +97,5 @@ def init_database(db_path: str = ":memory:", applist: str = None):
     db.generate_mapping(create_tables=True)
 
     with db_session:
-        GameTable.add_games(applist)
+        if applist:
+            GameTable.add_games(applist)
