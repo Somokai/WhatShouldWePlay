@@ -19,10 +19,8 @@ class Game(db.Entity):
 
 
 class Player(db.Entity):
-    # message.author.id
     key = PrimaryKey(int, auto=True)
     id = Required(str, unique=True)
-    # message.author.name
     name = Required(str)
     games = Set("Game", reverse="players")
     banned = Set("Game", reverse="banners")
