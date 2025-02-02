@@ -10,6 +10,7 @@ readme = { file = "README.md", content-type = "text/markdown" }
 
 dependencies = [
   "discord.py == 2.4.0",
+  "pony==0.7.19",
   "python-dotenv == 1.0.1",
   "legacy-cgi == 2.6.2; python_version >= '3.13'"
 ]
