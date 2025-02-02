@@ -3,6 +3,7 @@ from pony.orm import Database, PrimaryKey, Set, Required, Optional, db_session
 db = Database()
 _is_initialized = False  # Track initialization state
 
+
 class Game(db.Entity):
     key = PrimaryKey(int, auto=True)
     name = Required(str, unique=True)
