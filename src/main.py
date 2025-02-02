@@ -77,7 +77,7 @@ class WhatShouldWePlayBot(discord.Client):
                 )
             case "$remove":
                 games = [game.strip() for game in msg.split(",")]
-                
+
                 with db_session:
                     user = Player.get(id=id) or Player(id=id, name=author.name)
                     user.remove_games(*games)
@@ -110,7 +110,7 @@ class WhatShouldWePlayBot(discord.Client):
                 )
             case "$unban":
                 games = [game.strip() for game in msg.split(",")]
-                
+
                 with db_session:
                     user = Player.get(id=id) or Player(id=id, name=author.name)
                     user.remove_banned_games(*games)
@@ -192,7 +192,9 @@ class WhatShouldWePlayBot(discord.Client):
                 member.id not in self._MEMBER_IGNORE_LIST
                 and member.status == discord.Status.online
             ):
-                player = Player.get(id=str(member.id)) or Player(id=str(member.id), name=member.name)
+                player = Player.get(id=str(member.id)) or Player(
+                    id=str(member.id), name=member.name
+                )
                 game_data.append([game.name for game in player.get_games()])
         return game_data
 
@@ -204,7 +206,9 @@ class WhatShouldWePlayBot(discord.Client):
                 member.id not in self._MEMBER_IGNORE_LIST
                 and member.status == discord.Status.online
             ):
-                player = Player.get(id=str(member.id)) or Player(id=str(member.id), name=member.name)
+                player = Player.get(id=str(member.id)) or Player(
+                    id=str(member.id), name=member.name
+                )
                 disallowlist += [game.name for game in player.get_banned_games()]
         return disallowlist
 

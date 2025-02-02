@@ -1,5 +1,7 @@
 from pony.orm import Database, PrimaryKey, Set, Required, Optional, db_session
+
 db = Database()
+
 
 class Game(db.Entity):
     name = Required(str, unique=True)
@@ -10,10 +12,11 @@ class Game(db.Entity):
     @db_session
     def set_player_count(self, count: int):
         self.player_count = count
-    
+
     @db_session
     def get_player_count(self) -> list["Player"]:
         return self.player_count
+
 
 class Player(db.Entity):
     # message.author.id
@@ -29,31 +32,31 @@ class Player(db.Entity):
         for name in names:
             game = Game.get(name=name) or Game(name=name)
             self.games += game
-    
+
     @db_session
     def add_banned_games(self, *names: str):
         for name in names:
             game = Game.get(name=name) or Game(name=name)
             self.banned += game
-    
+
     @db_session
     def remove_games(self, *names: str):
         for name in names:
             game = Game.get(name=name)
             if game:
                 self.games.remove(game)
-    
+
     @db_session
     def remove_banned_games(self, *names: str):
         for name in names:
             game = Game.get(name=name)
             if game:
                 self.banned.remove(game)
-    
+
     @db_session
     def get_games(self) -> list["Game"]:
         return list(self.games)
-    
+
     @db_session
     def get_banned_games(self) -> list["Game"]:
         return list(self.banned)

@@ -12,8 +12,7 @@
     "words": [
         "dotenv",
         "levelno",
-        "unblacklist",
-        "undisallowlist",
+        "unban",
         "whatshouldweplay"
     ]
 }

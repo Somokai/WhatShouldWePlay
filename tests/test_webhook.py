@@ -5,6 +5,7 @@ from discord.ext import test
 import os
 import discord
 
+
 @pytest_asyncio.fixture
 async def bot():
     bot = WhatShouldWePlayBot()
@@ -89,7 +90,9 @@ async def test_from_player(bot):
 
         # Adding games
         player.add_games("Game1", "Game 2")
-        assert sorted([game.name for game in player.get_games()]) == sorted(["Game 2", "Game1"])
+        assert sorted([game.name for game in player.get_games()]) == sorted(
+            ["Game 2", "Game1"]
+        )
 
         # Remove a games and test
         player.remove_games("Game1")
@@ -100,7 +103,9 @@ async def test_from_player(bot):
 
         # Adding games to disallow list
         player.add_banned_games("Game1", "Game 2")
-        assert sorted([game.name for game in player.get_banned_games()]) == sorted(["Game 2", "Game1"])
+        assert sorted([game.name for game in player.get_banned_games()]) == sorted(
+            ["Game 2", "Game1"]
+        )
 
         # Remove a games and test
         player.remove_banned_games("Game1")
