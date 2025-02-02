@@ -25,7 +25,7 @@ class WhatShouldWePlayBot(discord.Client):
     _ignore_disallowlist = False
     _member_count = -1
 
-    def __init__(self):
+    def __init__(self, db_path: str = ":memory:"):
         super().__init__(intents=discord.Intents.all())
         stream_handler = logging.StreamHandler(sys.stdout)
         stream_handler.setLevel(logging.INFO)
@@ -37,6 +37,8 @@ class WhatShouldWePlayBot(discord.Client):
             level=logging.INFO,
             handlers=[stream_handler, file_handler],
         )
+
+        init_database(db_path)
 
     async def on_ready(self):
         logging.info(f"Logged in as user {self.user.name}")
@@ -235,6 +237,5 @@ class WhatShouldWePlayBot(discord.Client):
 
 
 if __name__ == "__main__":
-    init_database(os.getenv("DB_PATH"))
-    client = WhatShouldWePlayBot()
+    client = WhatShouldWePlayBot(os.getenv("DB_PATH"))
     client.run(os.getenv("TOKEN"))

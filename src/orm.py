@@ -10,6 +10,10 @@ class Game(db.Entity):
     @db_session
     def set_player_count(self, count: int):
         self.player_count = count
+    
+    @db_session
+    def get_player_count(self) -> list["Player"]:
+        return self.player_count
 
 class Player(db.Entity):
     # message.author.id
