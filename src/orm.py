@@ -1,9 +1,10 @@
 from pony.orm import Database, PrimaryKey, Set, Required, Optional, db_session
 
 db = Database()
-
+_is_initialized = False  # Track initialization state
 
 class Game(db.Entity):
+    key = PrimaryKey(int, auto=True)
     name = Required(str, unique=True)
     player_count = Optional(int)
     players = Set("Player", reverse="games")
@@ -61,5 +62,9 @@ class Player(db.Entity):
 
 
 def init_database(db_path: str = ":memory:"):
+    global _is_initialized
+    if _is_initialized:
+        return
+    _is_initialized = True
     db.bind(provider="sqlite", filename=db_path, create_db=True)
     db.generate_mapping(create_tables=True)
