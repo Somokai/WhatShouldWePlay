@@ -199,7 +199,7 @@ class WhatShouldWePlayBot(discord.Client):
         return game_data
 
     @db_session
-    def get_disallowlist_guild(self, guild):
+    def get_guild_ban_list(self, guild):
         disallowlist = []
         for member in guild.members:
             if (
@@ -223,7 +223,7 @@ class WhatShouldWePlayBot(discord.Client):
 
         potential_games = set.intersection(*potential_games)
         player_counts = self.get_player_count(potential_games)
-        disallowlist = self.get_disallowlist_guild(guild)
+        disallowlist = self.get_guild_ban_list(guild)
         games = []
         for game in potential_games:
             count_ok = player_count == "*" or player_counts[game] >= int(player_count)
