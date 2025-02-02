@@ -27,17 +27,19 @@ def user():
 @pytest.mark.asyncio
 async def test_add_games(bot):
     member = await test.member_join()
-
+    id = str(member.id)
     # Adding games
     await test.message("$Add Game1, Game 2", member=member)
     with db_session:
-        games = [game.name for game in Player.get(id=str(member.id)).get_games()]
+        player = Player.get(id=id)
+        games = [game.name for game in player.get_games()]
         assert sorted(games) == sorted(["Game 2", "Game1"])
 
     # Adding to ban list
     await test.message("$ban Game 2", member=member)
     with db_session:
-        games = [game.name for game in Player.get(id=str(member.id)).get_banned_games()]
+        player = Player.get(id=id)
+        games = [game.name for game in player.get_banned_games()]
         assert sorted(games) == sorted(["Game 2"])
 
     # Checking that suggest * works
@@ -58,14 +60,14 @@ async def test_add_games(bot):
     # Check that removing from disallowlist works
     await test.message("$unban Game 2", member=member)
     with db_session:
-        player = Player.get(id=str(member.id))
+        player = Player.get(id=id)
         games = [game.name for game in player.get_banned_games()]
         assert games == []
 
     # Remove a game and test
     await test.message("$remove Game1", member=member)
     with db_session:
-        player = Player.get(id=str(member.id))
+        player = Player.get(id=id)
         games = [game.name for game in player.get_games()]
         assert games == ["Game 2"]
 
@@ -75,7 +77,8 @@ async def test_add_games(bot):
     # Remove the last game and make sure it's empty
     await test.message("$remove Game 2", member=member)
     with db_session:
-        games = [game.name for game in Player.get(id=str(member.id)).get_games()]
+        player = Player.get(id=id)
+        games = [game.name for game in player.get_games()]
         assert games == []
 
     # Make sure the list doesn't fail when there are no games
