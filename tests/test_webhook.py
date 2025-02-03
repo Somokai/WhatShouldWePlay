@@ -115,3 +115,25 @@ async def test_from_player(bot):
 
         player.remove_banned_games("Game 2")
         assert [game.name for game in player.get_banned_games()] == []
+
+
+@pytest.mark.asyncio
+async def test_suggest(bot):
+    m1 = await test.member_join()
+    m2 = await test.member_join()
+    m3 = await test.member_join()
+
+    for member in test.get_config().guilds[0].members[2:]:
+        member.status = discord.Status.online
+
+    await test.message("$add Game1, Game2, Game3", member=m1)
+    await test.message("$add Game1, Game2", member=m2)
+    await test.message("$add Game1, Game3", member=m3)
+
+    await test.message("$ban Game2", member=m3)
+
+    await test.message("$admin set Game1 players: 3", member=m1)
+
+    await test.message("$suggest 3", member=m1)
+    resp = test.get_message()
+    assert resp.content == "Game1"

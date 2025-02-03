@@ -3,6 +3,7 @@ from typing import List, Optional, Set
 import discord
 from discord.ext import commands
 from orm import db_session, Game, Player
+from pony.orm import select, coalesce
 from cog.converter import GamePlayerCount
 import random
 
@@ -75,7 +76,7 @@ class ServerCog(commands.Cog):
         await ctx.message.add_reaction("👍")
 
     @db_session
-    def get_games_guild(self, guild) -> List[Set[str]]:
+    def get_games_guild(self, guild: discord.Guild) -> List[Set[str]]:
         """Returns a list, where each element is a set of games that a user in the guild has."""
         game_data = []
         for member in guild.members:
@@ -108,11 +109,7 @@ class ServerCog(commands.Cog):
     @db_session
     def get_game_player_counts(self, *games: str, default=0) -> dict[str, int]:
         """Returns a dictionary of game names to player counts."""
-        data = {}
-        for game in games:
-            game = Game.get(name=game) or Game(name=game)
-            data[game.name] = game.player_count or default
-        return data
+        return dict(select((g.name, coalesce(g.player_count, default)) for g in Game if g.name in games)[:])
 
     @db_session
     def get_guild_bans(self, guild: discord.Guild) -> List[str]:
