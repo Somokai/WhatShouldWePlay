@@ -5,8 +5,9 @@ import logging
 import random
 from datetime import date
 from dotenv import load_dotenv
-from orm import Player, Game, init_database
+from orm import Player, Game, SteamMetaData, init_database
 from pony.orm import db_session
+from steamapi import SteamAPI
 
 load_dotenv()
 
@@ -24,6 +25,7 @@ class WhatShouldWePlayBot(discord.Client):
     _MEMBER_IGNORE_LIST = [959263650701508638, 961433803484712960]
     _ignore_disallowlist = False
     _member_count = -1
+    api = SteamAPI(os.getenv("API_KEY"))
 
     def __init__(self, db_path: str = ":memory:"):
         super().__init__(intents=discord.Intents.all())
@@ -38,7 +40,7 @@ class WhatShouldWePlayBot(discord.Client):
             handlers=[stream_handler, file_handler],
         )
 
-        init_database(db_path)
+        init_database(db_path, self.api.get_app_list())
 
     async def on_ready(self):
         logging.info(f"Logged in as user {self.user.name}")
@@ -159,6 +161,35 @@ class WhatShouldWePlayBot(discord.Client):
                 else:
                     out_msg = "Incorrect command set player count using '$set <game> <max_player_count>'"
                 await message.channel.send(out_msg)
+            case "$link":
+                steamid = msg.strip()
+                games_data = self.api.get_games(steamid)
+                if not games_data:
+                    await message.channel.send("Invalid Steam ID or private profile.")
+                    return
+                appids = []
+                with db_session:
+                    for game_data in games_data:
+                        steam_metadata = SteamMetaData.get(appid=game_data["appid"])
+                        if not steam_metadata:
+                            game_info = self.api.get_games_by_id(game_data["appid"])
+                            if not game_info:
+                                continue
+                            name = game_info["name"]
+                            if not name:
+                                continue
+                            SteamMetaData(
+                                appid=game_data["appid"],
+                                name=name,
+                                game=Game(name=name),
+                            )
+                        appids.append(game_data["appid"])
+
+                with db_session:
+                    user = Player.get(id=id) or Player(id=id, name=author.name)
+                    user.add_games_with_appid(*appids)
+
+                await message.channel.send(f"{len(appids)} added to {author}'s record")
         return
 
     async def on_presence_update(self, prev, cur):
