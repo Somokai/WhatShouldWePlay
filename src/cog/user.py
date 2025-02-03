@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 from pony.orm import db_session
 from orm import Player, Game, SteamMetaData
+from .converter import GameList
 import logging
 
 
@@ -45,11 +46,8 @@ class UserCog(commands.Cog):
         await ctx.send(f"{len(appids)} added to {name}'s record")
 
     @commands.command()
-    async def add(self, ctx: commands.Context, *games: str):
+    async def add(self, ctx: commands.Context, *, games: GameList):
         """Add games to user profile"""
-        games = " ".join(games)
-        games = [game.strip() for game in games.split(",")]
-
         id = str(ctx.author.id)
         with db_session:
             player = Player.get(id=id) or Player(id=id, name=ctx.author.name)
@@ -59,11 +57,8 @@ class UserCog(commands.Cog):
         await ctx.message.add_reaction("👍")
 
     @commands.command()
-    async def remove(self, ctx: commands.Context, *games: str):
+    async def remove(self, ctx: commands.Context, *, games: GameList):
         """Remove games from user profile"""
-        games = " ".join(games)
-        games = [game.strip() for game in games.split(",")]
-
         id = str(ctx.author.id)
         with db_session:
             player = Player.get(id=id)
@@ -74,11 +69,8 @@ class UserCog(commands.Cog):
         await ctx.message.add_reaction("👍")
 
     @commands.command()
-    async def ban(self, ctx: commands.Context, *games: str):
+    async def ban(self, ctx: commands.Context, *, games: GameList):
         """Ban games from user profile"""
-        games = " ".join(games)
-        games = [game.strip() for game in games.split(",")]
-
         id = str(ctx.author.id)
         with db_session:
             player = Player.get(id=id)
@@ -89,11 +81,8 @@ class UserCog(commands.Cog):
         await ctx.message.add_reaction("👍")
 
     @commands.command()
-    async def unban(self, ctx: commands.Context, *games: str):
+    async def unban(self, ctx: commands.Context, *, games: GameList):
         """Unban games from user profile"""
-        games = " ".join(games)
-        games = [game.strip() for game in games.split(",")]
-
         id = str(ctx.author.id)
         with db_session:
             player = Player.get(id=id)
