@@ -5,7 +5,7 @@ import logging
 import random
 from datetime import date
 from dotenv import load_dotenv
-from orm import Player, Game, GameTable, init_database
+from orm import Player, Game, SteamMetaData, init_database
 from pony.orm import db_session
 from steamapi import SteamAPI
 
@@ -163,30 +163,33 @@ class WhatShouldWePlayBot(discord.Client):
                 await message.channel.send(out_msg)
             case "$link":
                 steamid = msg.strip()
-                game_data = self._api.get_games(steamid)
-                if not game_data:
+                games_data = self._api.get_games(steamid)
+                if not games_data:
                     await message.channel.send("Invalid Steam ID or private profile.")
                     return
-                games = []
-                for game in game_data:
-                    with db_session:
-                        name = GameTable.get(appid=game["appid"])
-                        if not name:
-                            game_info = self._api.get_games_by_id(game["appid"])
+                appids = []
+                with db_session:
+                    for game_data in games_data:
+                        steam_metadata = SteamMetaData.get(appid=game_data["appid"])
+                        if not steam_metadata:
+                            game_info = self._api.get_games_by_id(game_data["appid"])
                             if not game_info:
                                 continue
                             name = game_info["name"]
-                            GameTable(appid=game["appid"], name=name)
-                        else:
-                            name = name.name
-                        if name:
-                            games.append(name)
+                            if not name:
+                                continue
+                            SteamMetaData(
+                                appid=game_data["appid"],
+                                name=name,
+                                game=Game(name=name),
+                            )
+                        appids.append(game_data["appid"])
 
                 with db_session:
                     user = Player.get(id=id) or Player(id=id, name=author.name)
-                    user.add_games(*games)
+                    user.add_games_with_appid(*appids)
 
-                await message.channel.send(f"{len(games)} added to {author}'s record")
+                await message.channel.send(f"{len(appids)} added to {author}'s record")
         return
 
     async def on_presence_update(self, prev, cur):

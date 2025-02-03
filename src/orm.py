@@ -4,6 +4,8 @@ from pony.orm import (
     Set,
     Required,
     Optional,
+    MultipleObjectsFoundError,
+    composite_key,
     db_session,
     select,
 )
@@ -12,28 +14,11 @@ db = Database()
 _is_initialized = False  # Track initialization state
 
 
-class GameTable(db.Entity):
-    appid = PrimaryKey(int, auto=True)
-    name = Optional(str)  # Games can have the same name, but not the same appid
-
-    @db_session
-    def add_games(games: list[dict[str, str]]):
-        appids_set_cur = set(select(g.appid for g in GameTable)[:])
-        appids_set_new = set(g["appid"] for g in games)
-        games_to_add = appids_set_new - appids_set_cur
-
-        # Extract the games to add from the original games list
-        games_to_add_details = [game for game in games if game["appid"] in games_to_add]
-
-        for game in games_to_add_details:
-            GameTable(appid=game["appid"], name=game["name"])
-        return
-
-
 class Game(db.Entity):
     key = PrimaryKey(int, auto=True)
     name = Required(str, unique=True)
     player_count = Optional(int)
+    steam_metadata = Optional("SteamMetaData")
     players = Set("Player", reverse="games")
     banners = Set("Player", reverse="banned")
 
@@ -56,7 +41,21 @@ class Player(db.Entity):
     @db_session
     def add_games(self, *names: str):
         for name in names:
-            game = Game.get(name=name) or Game(name=name)
+            try:
+                steam_metadata = SteamMetaData.get(name=name)
+            except MultipleObjectsFoundError:
+                steam_metadata = (
+                    None  # Set to none for now, because we don't have appid
+                )
+            game = Game.get(name=name) or Game(name=name, steam_metadata=steam_metadata)
+            self.games += game
+
+    def add_games_with_appid(self, *appids: int):
+        for appid in appids:
+            steam_metadata = SteamMetaData.get(appid=appid)
+            game = Game.get(name=steam_metadata.name) or Game(
+                name=steam_metadata.name, steam_metadata=steam_metadata
+            )
             self.games += game
 
     @db_session
@@ -88,6 +87,31 @@ class Player(db.Entity):
         return list(self.banned)
 
 
+class SteamMetaData(db.Entity):
+    key = PrimaryKey(int, auto=True)
+    appid = Required(int)
+    name = Required(str)  # Games can have the same name, but not the same appid
+    game = Optional(Game)
+    composite_key(appid, name)
+
+    @db_session
+    def add_games(games: list[dict[str, str]]):
+        appids_set_cur = set(select(g.appid for g in SteamMetaData)[:])
+        appids_set_new = set(g["appid"] for g in games)
+        games_to_add = appids_set_new - appids_set_cur
+
+        # Extract the games to add from the original games list
+        games_to_add_details = [game for game in games if game["appid"] in games_to_add]
+
+        for game in games_to_add_details:
+            if not game["name"]:
+                continue
+            # The appid is unique, but there are dupes in the api response
+            if not SteamMetaData.get(appid=game["appid"]):
+                SteamMetaData(appid=game["appid"], name=game["name"])
+        return
+
+
 def init_database(db_path: str = ":memory:", applist: str = None):
     global _is_initialized
     if _is_initialized:
@@ -98,4 +122,4 @@ def init_database(db_path: str = ":memory:", applist: str = None):
 
     with db_session:
         if applist:
-            GameTable.add_games(applist)
+            SteamMetaData.add_games(applist)

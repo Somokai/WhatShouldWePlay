@@ -44,5 +44,7 @@ class SteamAPI:
         )
         if req.status_code != 200:
             return []
+        if not json.loads(req.text)[str(appid)]["success"]:
+            return []
         else:
             return json.loads(req.text)[str(appid)]["data"]
