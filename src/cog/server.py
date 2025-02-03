@@ -15,6 +15,9 @@ class ServerCog(commands.Cog):
     @commands.command()
     async def suggest(self, ctx: commands.Context, filter: Optional[str] = None):
         """Suggest a game to play"""
+        if not ctx.guild:
+            await ctx.send("This command is only available in servers.")
+            return
         all_games = self.get_games_guild(ctx.guild)
         if filter is None or filter == "*":
             member_count = len(ctx.guild.members)
