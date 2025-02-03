@@ -89,7 +89,8 @@ class Player(db.Entity):
 
 class SteamMetaData(db.Entity):
     key = PrimaryKey(int, auto=True)
-    appid = Required(int)
+    appid = Required(int, unique=True)
+
     name = Required(str)  # Games can have the same name, but not the same appid
     game = Optional(Game)
     composite_key(appid, name)
