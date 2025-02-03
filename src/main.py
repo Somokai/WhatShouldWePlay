@@ -61,7 +61,7 @@ async def main():
     bot = WhatShouldWePlayBot(os.getenv("DB_PATH"))
     await bot.add_cog(UserCog(bot))
     await bot.add_cog(ServerCog(bot))
-    await bot.sync_with_steam()
+    bot.sync_with_steam()
     await bot.start(os.getenv("TOKEN"))
 
 
