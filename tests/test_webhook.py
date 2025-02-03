@@ -9,7 +9,7 @@ import discord
 
 @pytest_asyncio.fixture
 async def bot():
-    bot = WhatShouldWePlayBot("DB.DB")
+    bot = WhatShouldWePlayBot()
     await bot.add_cog(UserCog(bot))
     await bot.add_cog(ServerCog(bot))
     await bot._async_setup_hook()

@@ -5,7 +5,7 @@ import sys
 import logging
 from datetime import date
 from dotenv import load_dotenv
-from orm import init_database
+from orm import SteamMetaData, init_database, db_session
 from cog import UserCog, ServerCog
 from steamapi import SteamAPI
 import asyncio
@@ -26,10 +26,8 @@ class Filter(object):
 class WhatShouldWePlayBot(commands.Bot):
     # These are the member id's for the bots, we ignore them for specific checks
     _MEMBER_IGNORE_LIST = [959263650701508638, 961433803484712960]
-    _ignore_disallowlist = False
     _ignore_banlist = False
-    _member_count = -1
-    api = SteamAPI(os.getenv("API_KEY"))
+    api: SteamAPI = SteamAPI(os.getenv("API_KEY"))
 
     def __init__(self, db_path: str = ":memory:"):
         intents = discord.Intents.default()
@@ -47,7 +45,12 @@ class WhatShouldWePlayBot(commands.Bot):
             handlers=[stream_handler, file_handler],
         )
 
-        init_database(db_path, self.api.get_app_list())
+        init_database(db_path)
+
+    def sync_with_steam(self):
+        games = self.api.get_app_list()
+        with db_session:
+            SteamMetaData.add_games(games)
 
     async def on_ready(self):
         logging.info(f"Logged in as user {self.user.name}")
@@ -56,11 +59,14 @@ class WhatShouldWePlayBot(commands.Bot):
         # For now, lets just dump the exception we get to the console
         traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
+
 async def main():
     bot = WhatShouldWePlayBot(os.getenv("DB_PATH"))
     await bot.add_cog(UserCog(bot))
     await bot.add_cog(ServerCog(bot))
+    await bot.sync_with_steam()
     await bot.start(os.getenv("TOKEN"))
+
 
 if __name__ == "__main__":
     asyncio.run(main())

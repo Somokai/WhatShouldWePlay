@@ -6,6 +6,7 @@ from orm import db_session, Game, Player
 from cog.converter import GamePlayerCount
 import random
 
+
 class ServerCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -46,7 +47,7 @@ class ServerCog(commands.Cog):
         name = config.game
         players = config.players
         with db_session:
-            game = Game.get(name=name) or Game(name=name) # TODO: Limit to guild managed games
+            game = Game.get(name=name) or Game(name=name)  # TODO: Limit to guild managed games
             if game is None:
                 await ctx.message.add_reaction("👎")
                 await ctx.send("Game not found.")
@@ -88,12 +89,12 @@ class ServerCog(commands.Cog):
             return None
         potential_games = set.intersection(*game_data)
         player_counts = self.get_game_player_counts(*potential_games, default=player_count)
-        disallowlist = self.get_guild_bans(guild)
+        banlist = self.get_guild_bans(guild)
         games = []
         for game in potential_games:
             count_ok = player_counts[game] >= int(player_count)
-            disallowlist_ok = game not in disallowlist or self._ignore_disallowlist
-            if count_ok and disallowlist_ok:
+            banlist_ok = game not in banlist or self.bot._ignore_banlist
+            if count_ok and banlist_ok:
                 games.append(game)
 
         # This is checking to see if there are any games in the list because

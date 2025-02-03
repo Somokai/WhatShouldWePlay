@@ -3,13 +3,46 @@ from discord.ui import View, Button
 import discord
 from discord.ext import commands
 from pony.orm import db_session
-from orm import Player, Game
+from orm import Player, Game, SteamMetaData
 import logging
 
 
 class UserCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.command()
+    async def link(self, ctx: commands.Context, steam_id: str):
+        """Register all games from your steam profile"""
+        games_data = self.bot.api.get_games(steam_id)
+        if not games_data:
+            await ctx.send("Invalid Steam ID or private profile.")
+            return
+        appids = []
+        with db_session:
+            for game_data in games_data:
+                steam_metadata = SteamMetaData.get(appid=game_data["appid"])
+                if not steam_metadata:
+                    game_info = self.bot.api.get_games_by_id(game_data["appid"])
+                    if not game_info:
+                        continue
+                    name = game_info["name"]
+                    if not name:
+                        continue
+                    SteamMetaData(
+                        appid=game_data["appid"],
+                        name=name,
+                        game=Game(name=name),
+                    )
+                appids.append(game_data["appid"])
+
+        with db_session:
+            id = str(ctx.author.id)
+            name = ctx.author.name
+            user = Player.get(id=id) or Player(id=id, name=name)
+            user.add_games_with_appid(*appids)
+
+        await ctx.send(f"{len(appids)} added to {name}'s record")
 
     @commands.command()
     async def add(self, ctx: commands.Context, *games: str):
