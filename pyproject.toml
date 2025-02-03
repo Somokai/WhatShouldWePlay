@@ -20,12 +20,14 @@ dev = [
   "ruff == 0.8.6",
   "pytest == 8.3.4",
   "coverage == 7.6.10", 
-  "dpytest==0.7.0",
+  "dpytest @ git+https://github.com/Javagedes/dpytest.git@master",
   "requests==2.32.2"
 ]
 
 [tool.coverage.run]
 include = ["src"]
+
+[tool.ruff]
 line-length = 120
 
 [lint]

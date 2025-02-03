@@ -1,6 +1,7 @@
 import pytest_asyncio
 import pytest
-from main import WhatShouldWePlayBot, Player, Game, db_session
+from main import WhatShouldWePlayBot, UserCog, ServerCog
+from orm import Player, Game, db_session
 from discord.ext import test
 import os
 import discord
@@ -9,6 +10,8 @@ import discord
 @pytest_asyncio.fixture
 async def bot():
     bot = WhatShouldWePlayBot()
+    await bot.add_cog(UserCog(bot))
+    await bot.add_cog(ServerCog(bot))
     await bot._async_setup_hook()
 
     test.configure(bot)
@@ -29,7 +32,7 @@ async def test_add_games(bot):
     member = await test.member_join()
     id = str(member.id)
     # Adding games
-    await test.message("$Add Game1, Game 2", member=member)
+    await test.message("$add Game1, Game 2", member=member)
     with db_session:
         player = Player.get(id=id)
         games = [game.name for game in player.get_games()]
@@ -46,7 +49,7 @@ async def test_add_games(bot):
     await test.message("$suggest *", member=member) is not None
 
     # Checking setting a player works
-    await test.message("$set Game 1, 3", member=member)
+    await test.message("$admin set Game 1 players: 3", member=member)
     with db_session:
         game = Game.get(name="Game 1")
         assert game.get_player_count() == 3
@@ -93,9 +96,7 @@ async def test_from_player(bot):
 
         # Adding games
         player.add_games("Game1", "Game 2")
-        assert sorted([game.name for game in player.get_games()]) == sorted(
-            ["Game 2", "Game1"]
-        )
+        assert sorted([game.name for game in player.get_games()]) == sorted(["Game 2", "Game1"])
 
         # Remove a games and test
         player.remove_games("Game1")
@@ -106,9 +107,7 @@ async def test_from_player(bot):
 
         # Adding games to disallow list
         player.add_banned_games("Game1", "Game 2")
-        assert sorted([game.name for game in player.get_banned_games()]) == sorted(
-            ["Game 2", "Game1"]
-        )
+        assert sorted([game.name for game in player.get_banned_games()]) == sorted(["Game 2", "Game1"])
 
         # Remove a games and test
         player.remove_banned_games("Game1")
@@ -116,3 +115,25 @@ async def test_from_player(bot):
 
         player.remove_banned_games("Game 2")
         assert [game.name for game in player.get_banned_games()] == []
+
+
+@pytest.mark.asyncio
+async def test_suggest(bot):
+    m1 = await test.member_join()
+    m2 = await test.member_join()
+    m3 = await test.member_join()
+
+    for member in test.get_config().guilds[0].members[2:]:
+        member.status = discord.Status.online
+
+    await test.message("$add Game1, Game2, Game3", member=m1)
+    await test.message("$add Game1, Game2", member=m2)
+    await test.message("$add Game1, Game3", member=m3)
+
+    await test.message("$ban Game2", member=m3)
+
+    await test.message("$admin set Game1 players: 3", member=m1)
+
+    await test.message("$suggest 3", member=m1)
+    resp = test.get_message()
+    assert resp.content == "Game1"

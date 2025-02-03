@@ -39,9 +39,7 @@ class SteamAPI:
             return json.loads(req.text)["applist"]["apps"]
 
     def get_games_by_id(self, appid):
-        req = requests.get(
-            f"http://store.steampowered.com/api/appdetails?appids={appid}"
-        )
+        req = requests.get(f"http://store.steampowered.com/api/appdetails?appids={appid}")
         if req.status_code != 200:
             return []
         if not json.loads(req.text)[str(appid)]["success"]:

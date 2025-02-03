@@ -45,9 +45,7 @@ class Player(db.Entity):
             try:
                 steam_metadata = SteamMetaData.get(name=name)
             except MultipleObjectsFoundError:
-                steam_metadata = (
-                    None  # Set to none for now, because we don't have appid
-                )
+                steam_metadata = None  # Set to none for now, because we don't have appid
             game = Game.get(name=name) or Game(name=name, steam_metadata=steam_metadata)
             self.games += game
 
@@ -116,14 +114,10 @@ class SteamMetaData(db.Entity):
         return
 
 
-def init_database(db_path: str = ":memory:", applist: str = None):
+def init_database(db_path: str = ":memory:"):
     global _is_initialized
     if _is_initialized:
         return
     _is_initialized = True
     db.bind(provider="sqlite", filename=db_path, create_db=True)
     db.generate_mapping(create_tables=True)
-
-    with db_session:
-        if applist:
-            SteamMetaData.add_games(applist)
