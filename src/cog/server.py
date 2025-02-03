@@ -88,21 +88,22 @@ class ServerCog(commands.Cog):
     def suggest_game(self, guild: discord.Guild, game_data: List[Set[str]], player_count: int) -> Optional[str]:
         if not game_data:
             return None
-        
-        # Reduce the list of games to only those that are common to all users
-        games = set.intersection(*game_data)
-        
-        # Get the player counts for the games
-        with db_session:
-            player_counts = dict(select((g.name, coalesce(g.player_count, player_count)) for g in Game if g.name in games)[:])
 
-        banlist = self.get_guild_bans(guild)
-        games = []
-        for game, count in player_counts.items():
-            count_ok = count >= int(player_count)
-            banlist_ok = game not in banlist or self.bot._ignore_banlist
-            if count_ok and banlist_ok:
-                games.append(game)
+        games = set.intersection(*game_data)
+        bans = self.get_guild_bans(guild)
+    
+        # Filters the games to only those that meet the following criteria:
+        # 1. The game in the table is in the list of possible games
+        # 2. The player count is greater than or equal to the player count requested
+        # 3. The game is not in the ban list (or the bot is ignoring the ban list)
+        with db_session:
+            subquery = select(g for g in Game).filter( lambda g:
+                    g.name in games and
+                    coalesce(g.player_count, player_count) >= player_count and
+                    (g.name not in bans or self.bot._ignore_banlist)
+                )
+            
+            games = list(select(g.name for g in subquery)[:])
 
         # This is checking to see if there are any games in the list because
         # random.choice breaks if you give it an empty list.
