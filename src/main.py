@@ -30,9 +30,6 @@ class WhatShouldWePlayBot(commands.Bot):
     api: SteamAPI = SteamAPI(os.getenv("API_KEY"))
 
     def __init__(self, db_path: str = ":memory:"):
-        intents = discord.Intents.default()
-        intents.presences = True
-        intents.message_content = True
         super().__init__(command_prefix="$", intents=discord.Intents.all())
         stream_handler = logging.StreamHandler(sys.stdout)
         stream_handler.setLevel(logging.INFO)
