@@ -88,12 +88,18 @@ class ServerCog(commands.Cog):
     def suggest_game(self, guild: discord.Guild, game_data: List[Set[str]], player_count: int) -> Optional[str]:
         if not game_data:
             return None
-        potential_games = set.intersection(*game_data)
-        player_counts = self.get_game_player_counts(*potential_games, default=player_count)
+        
+        # Reduce the list of games to only those that are common to all users
+        games = set.intersection(*game_data)
+        
+        # Get the player counts for the games
+        with db_session:
+            player_counts = dict(select((g.name, coalesce(g.player_count, player_count)) for g in Game if g.name in games)[:])
+
         banlist = self.get_guild_bans(guild)
         games = []
-        for game in potential_games:
-            count_ok = player_counts[game] >= int(player_count)
+        for game, count in player_counts.items():
+            count_ok = count >= int(player_count)
             banlist_ok = game not in banlist or self.bot._ignore_banlist
             if count_ok and banlist_ok:
                 games.append(game)
@@ -105,11 +111,6 @@ class ServerCog(commands.Cog):
             return None
         else:
             return random.choice(games)
-
-    @db_session
-    def get_game_player_counts(self, *games: str, default=0) -> dict[str, int]:
-        """Returns a dictionary of game names to player counts."""
-        return dict(select((g.name, coalesce(g.player_count, default)) for g in Game if g.name in games)[:])
 
     @db_session
     def get_guild_bans(self, guild: discord.Guild) -> List[str]:
