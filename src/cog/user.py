@@ -4,8 +4,9 @@ import discord
 from discord.ext import commands
 from pony.orm import db_session
 from orm import Player, Game, SteamMetaData
-from .converter import GameList
 import logging
+from .converter import GameList
+from .ui import GameView
 
 
 class UserCog(commands.Cog):
@@ -96,28 +97,30 @@ class UserCog(commands.Cog):
     async def list(self, ctx: commands.Context):
         """List games in the user profile"""
 
-        async def callback(interaction: discord.Interaction):
+        async def callback(interaction: discord.Interaction, view_bans: bool):
             with db_session:
                 player = Player.get(id=str(interaction.user.id))
-                games = [games.name for games in player.get_games()]
-                bans = [games.name for games in player.get_banned_games()]
+                games = sorted([games.name for games in player.get_games()])
+                bans = sorted([games.name for games in player.get_banned_games()])
 
-            embed = discord.Embed(
-                title="Your Games Registered with me!",
-            )
-            # List of bans (you can dynamically fetch this list)
-            games_list = "\n".join(games)
-            bans_list = "\n".join(bans)
+            view = GameView(interaction.user.id, games, bans, view_bans=view_bans)
+            await interaction.response.send_message(embed=view.embed(), view=view, ephemeral=True)
 
-            embed.add_field(name="Your Games", value=games_list, inline=True)
-            embed.add_field(name="Your Banned Games", value=bans_list, inline=True)
-            await interaction.response.send_message(embed=embed, view=None, ephemeral=True)
+        async def c1(interaction: discord.Interaction):
+            await callback(interaction, False)
 
-        games_button = Button(label="Click to View Your Games")
-        games_button.callback = callback
+        async def c2(interaction: discord.Interaction):
+            await callback(interaction, True)
+
+        b1 = Button(label="Click to View Your Games")
+        b1.callback = c1
+
+        b2 = Button(label="Click to View Your Banned Games")
+        b2.callback = c2
 
         view = View()
-        view.add_item(games_button)
+        view.add_item(b1)
+        view.add_item(b2)
 
         await ctx.send(view=view)
 
