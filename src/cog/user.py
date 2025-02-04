@@ -97,19 +97,19 @@ class UserCog(commands.Cog):
     @commands.command()
     async def list(self, ctx: commands.Context):
         """List games in the user profile"""
-        
+
         async def callback(interaction: discord.Interaction, view_bans: bool):
             with db_session:
                 player = Player.get(id=str(interaction.user.id))
                 games = sorted([games.name for games in player.get_games()])
                 bans = sorted([games.name for games in player.get_banned_games()])
-            
+
             view = GameView(interaction.user.id, games, bans, view_bans=view_bans)
             await interaction.response.send_message(embed=view.embed(), view=view, ephemeral=True)
-        
+
         async def c1(interaction: discord.Interaction):
             await callback(interaction, False)
-        
+
         async def c2(interaction: discord.Interaction):
             await callback(interaction, True)
 
@@ -123,7 +123,7 @@ class UserCog(commands.Cog):
         view.add_item(b1)
         view.add_item(b2)
 
-        #view = PaginationView(ctx.author.id, games, bans)
+        # view = PaginationView(ctx.author.id, games, bans)
         await ctx.send(view=view)
 
     @commands.Cog.listener()
