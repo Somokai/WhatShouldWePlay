@@ -183,5 +183,7 @@ class UserCog(commands.Cog):
         with db_session:
             user = Player.get(id=str(cur.id)) or Player(id=str(cur.id), name=cur.name)
             if cur.activity.type is discord.ActivityType.playing:
-                user.add_games(cur.activity.name)
+                # Note: I am not using the clean_names method here because I don't want to get the user involved.
+                game = cur.activity.name.strip()
+                user.add_games(game)
                 logging.info(f"User starting playing {cur.activity.name}. Added to user gamelist")
