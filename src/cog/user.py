@@ -106,6 +106,7 @@ class UserCog(commands.Cog):
     @commands.command()
     async def remove(self, ctx: commands.Context, *, games: GameList):
         """Remove games from user profile"""
+        games = await self.clean_names(ctx, *games)
         id = str(ctx.author.id)
         with db_session:
             player = Player.get(id=id)
@@ -118,6 +119,7 @@ class UserCog(commands.Cog):
     @commands.command()
     async def ban(self, ctx: commands.Context, *, games: GameList):
         """Ban games from user profile"""
+        games = await self.clean_names(ctx, *games)
         id = str(ctx.author.id)
         with db_session:
             player = Player.get(id=id)
