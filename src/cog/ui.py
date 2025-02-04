@@ -128,3 +128,59 @@ class GameView(View):
             return
 
         await self.update_message(interaction, self.current_page + 1)
+
+
+class WhichGame(View):
+    def __init__(self, user_id: int, user_input: str, *games: list[str]):
+        super().__init__()
+        self.games = games
+        self.user_input = user_input
+        self.user_id = user_id
+        self.selection = None
+        self.add_buttons()
+
+    def embed(self) -> discord.Embed:
+        embed = discord.Embed(title="Which Game Did You Mean?")
+        embed.add_field(name="Your Input", value=f"```\n{self.user_input}```", inline=False)
+        return embed
+
+    def add_buttons(self):
+        for i, game in enumerate(self.games):
+            button = Button(label=f"This One: {game}", style=discord.ButtonStyle.success, custom_id=f"button_{i}")
+            button.callback = self.create_select_game_callback(game)
+            self.add_item(button)
+
+        none_button = Button(label="None of These", style=discord.ButtonStyle.danger)
+        none_button.callback = self.none_callback
+        self.add_item(none_button)
+
+        add_button = Button(label="Add Game", style=discord.ButtonStyle.secondary)
+        add_button.callback = self.add_game_callback
+        self.add_item(add_button)
+
+    def create_select_game_callback(self, game):
+        async def callback(interaction: discord.Interaction):
+            if interaction.user.id != self.user_id:
+                await interaction.response.send_message("No touch!", ephemeral=True)
+                return
+            await interaction.response.send_message(f"You selected {game}.", ephemeral=True)
+            self.selection = game
+            self.stop()
+
+        return callback
+
+    async def none_callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("No touch!", ephemeral=True)
+            return
+        interaction.response.send_message("We couldn't find this game. Try again.", ephemeral=True)
+        self.selection = None
+        self.stop()
+
+    async def add_game_callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("No touch!", ephemeral=True)
+            return
+        interaction.reponse.send_message(f"Alright I'll add {self.user_input}", ephemeral=True)
+        self.selection = self.user_input
+        self.stop()
