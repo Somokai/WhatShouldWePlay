@@ -63,16 +63,16 @@ class GameView(View):
         embed = discord.Embed(title="Your Games Registered with me!")
 
         if self.view_bans:
-            bans = GameView.get_chunk(self.bans, self.current_page)
-            bans = "\n".join(GameView.get_chunk(self.bans, self.current_page))
-            bans = f"```\n{bans}```"
-            embed.add_field(name="Your Banned Games", value=bans, inline=True)
+            games = self.bans
+            name = "Your Banned Games"
         else:
-            games = GameView.get_chunk(self.games, self.current_page)
-            games = "\n".join(GameView.get_chunk(self.games, self.current_page))
-            games = f"```\n{games}```"
-            embed.add_field(name="Your Games", value=games, inline=True)
+            games = self.games
+            name = "Your Games"
 
+        games = "\n".join(GameView.get_chunk(games, self.current_page))
+        games = f"```\n{games}```"
+
+        embed.add_field(name=name, value=games, inline=True)
         embed.set_footer(text=f"Page {self.current_page}")
         return embed
 
@@ -115,7 +115,6 @@ class GameView(View):
     async def select(self, interaction: discord.Interaction, select: Select):
         old = self.view_bans
         self.view_bans = select.values[0] == "banned"
-        self.update_page_lock()
         if old == self.view_bans:
             await self.update_message(interaction, self.current_page)
         else:
