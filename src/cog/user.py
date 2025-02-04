@@ -5,7 +5,6 @@ from discord.ext import commands
 from pony.orm import db_session
 from orm import Player, Game, SteamMetaData
 import logging
-
 from .converter import GameList
 from .ui import GameView
 
@@ -123,7 +122,6 @@ class UserCog(commands.Cog):
         view.add_item(b1)
         view.add_item(b2)
 
-        # view = PaginationView(ctx.author.id, games, bans)
         await ctx.send(view=view)
 
     @commands.Cog.listener()
