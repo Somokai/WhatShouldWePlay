@@ -180,6 +180,6 @@ class WhichGame(View):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("No touch!", ephemeral=True)
             return
-        interaction.reponse.send_message(f"Alright I'll add {self.user_input}", ephemeral=True)
+        interaction.response.send_message(f"Alright I'll add {self.user_input}", ephemeral=True)
         self.selection = self.user_input
         self.stop()

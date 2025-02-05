@@ -15,7 +15,7 @@ class UserCog(commands.Cog):
 
     async def clean_names(self, ctx: commands.Context, *names: list[str]) -> list[str]:
         names = [name.strip() for name in names]
-        cleanded_names = []
+        cleaned_names = []
 
         async def get_selection(ctx: commands.Context, name: str, *possible_names: list[str]):
             if len(possible_names) > 10:
@@ -25,7 +25,7 @@ class UserCog(commands.Cog):
             await ctx.send(embed=view.embed(), view=view, ephemeral=True)
             await view.wait()
             if view.selection:
-                cleanded_names.append(view.selection)
+                cleaned_names.append(view.selection)
 
         for name in names:
             # 1. Check if the name exists in the database. Note: we can have name dupes in the database,
@@ -33,7 +33,7 @@ class UserCog(commands.Cog):
             with db_session:
                 games = SteamMetaData.select(name=name)[:]
                 if games:
-                    cleanded_names.append(games[0].name)
+                    cleaned_names.append(games[0].name)
                     continue
 
             # 2. Check if the name exists in the database with a different case
@@ -54,9 +54,9 @@ class UserCog(commands.Cog):
                     continue
 
             # 4. If not, add the name as is
-            cleanded_names.append(name)
+            cleaned_names.append(name)
 
-        return cleanded_names
+        return cleaned_names
 
     @commands.command()
     async def link(self, ctx: commands.Context, steam_id: str):
