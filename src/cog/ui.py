@@ -164,7 +164,7 @@ class WhichGame(View):
                 return
             await interaction.response.send_message(f"You selected {game}.", ephemeral=True)
             self.selection = game
-            self.stop()
+            await self.disable_buttons(interaction)
 
         return callback
 
@@ -172,14 +172,21 @@ class WhichGame(View):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("No touch!", ephemeral=True)
             return
-        interaction.response.send_message("We couldn't find this game. Try again.", ephemeral=True)
+        await interaction.response.send_message("We couldn't find this game. Try again.", ephemeral=True)
         self.selection = None
-        self.stop()
+        await self.disable_buttons(interaction)
 
     async def add_game_callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("No touch!", ephemeral=True)
             return
-        interaction.response.send_message(f"Alright I'll add {self.user_input}", ephemeral=True)
+        await interaction.response.send_message(f"Alright I'll add {self.user_input}", ephemeral=True)
         self.selection = self.user_input
+        await self.disable_buttons(interaction)
+
+    async def disable_buttons(self, interaction: discord.Interaction):
+        for item in self.children:
+            item.disabled = True
+
+        interaction.response.edit_message(content="Fixed", view=self)
         self.stop()

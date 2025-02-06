@@ -22,10 +22,13 @@ class UserCog(commands.Cog):
                 await ctx.send(f"Too many games similar to {name}, please be more specific.", ephemeral=True)
                 return
             view = WhichGame(ctx.author.id, name, *possible_names)
-            await ctx.send(embed=view.embed(), view=view, ephemeral=True)
+            message = await ctx.send(embed=view.embed(), view=view, ephemeral=True)
             await view.wait()
             if view.selection:
                 cleaned_names.append(view.selection)
+                for item in view.children:
+                    item.disabled = True
+                await message.edit(view=view)
 
         for name in names:
             # 1. Check if the name exists in the database. Note: we can have name dupes in the database,
@@ -95,6 +98,11 @@ class UserCog(commands.Cog):
     async def add(self, ctx: commands.Context, *, games: GameList):
         """Add games to user profile"""
         games = await self.clean_names(ctx, *games)
+
+        # If no games were selected, don't add anything
+        if not games:
+            return
+
         id = str(ctx.author.id)
         with db_session:
             player = Player.get(id=id) or Player(id=id, name=ctx.author.name)
