@@ -136,57 +136,42 @@ class WhichGame(View):
         self.user_input = user_input
         self.user_id = user_id
         self.selection = None
-        self.add_buttons()
+        self.add_item(Dropdown(user_id, user_input, games))
 
     def embed(self) -> discord.Embed:
         embed = discord.Embed(title="Which Game Did You Mean?")
         embed.add_field(name="Your Input", value=f"```\n{self.user_input}```", inline=False)
         return embed
 
-    def add_buttons(self):
-        for i, game in enumerate(self.games):
-            button = Button(label=f"This One: {game}", style=discord.ButtonStyle.success, custom_id=f"button_{i}")
-            button.callback = self.create_select_game_callback(game)
-            self.add_item(button)
 
-        none_button = Button(label="None of These", style=discord.ButtonStyle.danger)
-        none_button.callback = self.none_callback
-        self.add_item(none_button)
+class Dropdown(discord.ui.Select):
+    def __init__(self, user_id: int, user_input: str, games: list[str]):
+        self.user_id = user_id
+        self.user_input = user_input
+        options = []
+        for game in games:
+            options.append(discord.SelectOption(label=game))
+        options.append(discord.SelectOption(label="None of These", description="Game will not be added.", value="none"))
+        options.append(
+            discord.SelectOption(label="Add Game", description="Game will be added to your list.", value="add")
+        )
+        super().__init__(placeholder="Choose Game", options=options)
 
-        add_button = Button(label="Add Game", style=discord.ButtonStyle.secondary)
-        add_button.callback = self.add_game_callback
-        self.add_item(add_button)
-
-    def create_select_game_callback(self, game):
-        async def callback(interaction: discord.Interaction):
-            if interaction.user.id != self.user_id:
-                await interaction.response.send_message("No touch!", ephemeral=True)
-                return
-            await interaction.response.send_message(f"You selected {game}.", ephemeral=True)
-            self.selection = game
-            await self.disable_buttons(interaction)
-
-        return callback
-
-    async def none_callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("No touch!", ephemeral=True)
             return
-        await interaction.response.send_message("We couldn't find this game. Try again.", ephemeral=True)
-        self.selection = None
-        await self.disable_buttons(interaction)
-
-    async def add_game_callback(self, interaction: discord.Interaction):
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message("No touch!", ephemeral=True)
-            return
-        await interaction.response.send_message(f"Alright I'll add {self.user_input}", ephemeral=True)
-        self.selection = self.user_input
-        await self.disable_buttons(interaction)
-
-    async def disable_buttons(self, interaction: discord.Interaction):
-        for item in self.children:
-            item.disabled = True
-
-        interaction.response.edit_message(content="Fixed", view=self)
-        self.stop()
+        selection = self.values[0]
+        match selection:
+            case "None of These":
+                await interaction.response.send_message("We couldn't find this game. Try again.", ephemeral=True)
+            case "Add Game":
+                self.view.selection = self.user_input
+                await interaction.response.send_message(f"Alright I'll add {self.user_input}", ephemeral=True)
+            case _:
+                self.view.selection = selection
+                await interaction.response.send_message(f"You selected {self.view.selection}.", ephemeral=True)
+        self.disabled = True
+        self.placeholder = self.view.selection
+        await interaction.message.edit(view=self.view)
+        self.view.stop()

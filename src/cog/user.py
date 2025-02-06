@@ -22,13 +22,10 @@ class UserCog(commands.Cog):
                 await ctx.send(f"Too many games similar to {name}, please be more specific.", ephemeral=True)
                 return
             view = WhichGame(ctx.author.id, name, *possible_names)
-            message = await ctx.send(embed=view.embed(), view=view, ephemeral=True)
+            await ctx.send(embed=view.embed(), view=view, ephemeral=True)
             await view.wait()
             if view.selection:
-                cleaned_names.append(view.selection)
-                for item in view.children:
-                    item.disabled = True
-                await message.edit(view=view)
+                return view.selection
 
         for name in names:
             # 1. Check if the name exists in the database. Note: we can have name dupes in the database,
@@ -44,7 +41,9 @@ class UserCog(commands.Cog):
                 games = SteamMetaData.select(lambda g: g.name.lower() == name.lower())[:]
                 if games:
                     possible_names = [game.name for game in games]
-                    await get_selection(ctx, name, *possible_names)
+                    name = await get_selection(ctx, name, *possible_names)
+                    if name:
+                        cleaned_names.append(name)
                     continue
 
             # 3. If not, check if the name exists with a different case or in partial form
@@ -53,7 +52,9 @@ class UserCog(commands.Cog):
                 games.extend(SteamMetaData.select(lambda g: g.name.lower().endswith(name.lower()))[:])
                 if games:
                     possible_names = [game.name for game in games]
-                    await get_selection(ctx, name, *possible_names)
+                    name = await get_selection(ctx, name, *possible_names)
+                    if name:
+                        cleaned_names.append(name)
                     continue
 
             # 4. If not, add the name as is
