@@ -19,7 +19,7 @@ class UserCog(commands.Cog):
 
         async def get_selection(ctx: commands.Context, name: str, *possible_names: list[str]):
             possible_names = set(possible_names)
-            if len(possible_names) > 10:
+            if len(possible_names) > 50:
                 await ctx.send(f"Too many games similar to {name}, please be more specific.", ephemeral=True)
                 return
             view = WhichGame(ctx.author.id, name, *possible_names)
