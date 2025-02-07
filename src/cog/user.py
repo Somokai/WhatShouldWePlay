@@ -18,6 +18,7 @@ class UserCog(commands.Cog):
         cleaned_names = []
 
         async def get_selection(ctx: commands.Context, name: str, *possible_names: list[str]):
+            possible_names = set(possible_names)
             if len(possible_names) > 10:
                 await ctx.send(f"Too many games similar to {name}, please be more specific.", ephemeral=True)
                 return

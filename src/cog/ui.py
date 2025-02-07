@@ -153,7 +153,9 @@ class Dropdown(discord.ui.Select):
             options.append(discord.SelectOption(label=game))
         options.append(discord.SelectOption(label="None of These", description="Game will not be added.", value="none"))
         options.append(
-            discord.SelectOption(label="Add Game", description="Game will be added to your list.", value="add")
+            discord.SelectOption(
+                label="Add Game", description="Not seeing your game?\nTry again, but be more specific.", value="add"
+            )
         )
         super().__init__(placeholder="Choose Game", options=options)
 
