@@ -32,14 +32,19 @@ class UserCog(commands.Cog):
             # 1. Check if the name exists in the database. Note: we can have name dupes in the database,
             # so we will just use this name and fall back on the None SteamMetaData in calling method.
             with db_session:
-                games = SteamMetaData.select(name=name)[:]
+                # TODO: switch to MetaData
+                games = Game.select(name=name)[:] or SteamMetaData.select(name=name)[:]
                 if games:
                     cleaned_names.append(games[0].name)
                     continue
 
             # 2. Check if the name exists in the database with a different case
             with db_session:
-                games = SteamMetaData.select(lambda g: g.name.lower() == name.lower())[:]
+                games = (
+                    Game.select(lambda g: g.name.lower() == name.lower())[:]
+                    # TODO: switch to MetaData
+                    or SteamMetaData.select(lambda g: g.name.lower() == name.lower())[:]
+                )
                 if games:
                     possible_names = [game.name for game in games]
                     name = await get_selection(ctx, name, *possible_names)
@@ -49,8 +54,13 @@ class UserCog(commands.Cog):
 
             # 3. If not, check if the name exists with a different case or in partial form
             with db_session:
-                games = list(SteamMetaData.select(lambda g: g.name.lower().startswith(name.lower()))[:])
-                games.extend(SteamMetaData.select(lambda g: g.name.lower().endswith(name.lower()))[:])
+                if games:
+                    games = list(Game.select(lambda g: g.name.lower().startswith(name.lower()))[:])
+                    games.extend(Game.select(lambda g: g.name.lower().endswith(name.lower()))[:])
+                else:
+                    # TODO: switch to MetaData
+                    games = list(SteamMetaData.select(lambda g: g.name.lower().startswith(name.lower()))[:])
+                    games.extend(SteamMetaData.select(lambda g: g.name.lower().endswith(name.lower()))[:])
                 if games:
                     possible_names = [game.name for game in games]
                     name = await get_selection(ctx, name, *possible_names)

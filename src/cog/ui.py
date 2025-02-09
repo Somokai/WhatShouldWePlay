@@ -139,7 +139,7 @@ class WhichGame(View):
         self.add_item(Dropdown(user_id, user_input, games))
 
     def embed(self) -> discord.Embed:
-        embed = discord.Embed(title="Which Game Did You Mean?")
+        embed = discord.Embed(title="We couldn't find an exact match.\nDid you mean one of these?")
         embed.add_field(name="Your Input", value=f"```\n{self.user_input}```", inline=False)
         return embed
 
