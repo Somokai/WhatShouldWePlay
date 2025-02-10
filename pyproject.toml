@@ -19,7 +19,7 @@ dependencies = [
 dev = [
   "ruff == 0.9.4",
   "pytest == 8.3.4",
-  "coverage == 7.6.10", 
+  "coverage == 7.6.11", 
   "dpytest @ git+https://github.com/Javagedes/dpytest.git@master",
   "requests==2.32.2"
 ]
