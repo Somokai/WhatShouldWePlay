@@ -150,12 +150,16 @@ class Dropdown(discord.ui.Select):
         self.user_input = user_input
         options = []
         for game in games:
-            options.append(discord.SelectOption(label=game))
-        options.append(discord.SelectOption(label="None of These", description="Game will not be added.", value="none"))
+            options.append(discord.SelectOption(label=game, description="This One!"))
         options.append(
             discord.SelectOption(
-                label="Add Game", description="Not seeing your game?\nTry again, but be more specific.", value="add"
+                label="None of These",
+                description="Not seeing your game? Try again, but be more specific.",
+                value="none",
             )
+        )
+        options.append(
+            discord.SelectOption(label="Add Game", description="Not seeing your game? Add it anyway.", value="add")
         )
         super().__init__(placeholder="Choose Game", options=options)
 
@@ -165,9 +169,9 @@ class Dropdown(discord.ui.Select):
             return
         selection = self.values[0]
         match selection:
-            case "None of These":
+            case "none":
                 await interaction.response.send_message("We couldn't find this game. Try again.", ephemeral=True)
-            case "Add Game":
+            case "add":
                 self.view.selection = self.user_input
                 await interaction.response.send_message(f"Alright I'll add {self.user_input}", ephemeral=True)
             case _:
