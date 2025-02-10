@@ -30,9 +30,9 @@ class ServerCog(commands.Cog):
             else:
                 await ctx.send("Selected channel is not a voice channel or spelled incorrectly. Try again.")
                 return
-        game = self.suggest_game(ctx.guild, all_games, member_count)
-        if game:
-            await ctx.send(game)
+        games = self.suggest_game(ctx.guild, all_games, member_count)
+        if games:
+            await ctx.send(", ".join(games))
         else:
             await ctx.send(f"No Compatible games for player count of {member_count}")
 
@@ -108,11 +108,14 @@ class ServerCog(commands.Cog):
 
         # This is checking to see if there are any games in the list because
         # random.choice breaks if you give it an empty list.
-        # Note: this is the correct way to check for an empty list apparently.
+        suggest_count = 5
         if not games:
             return None
         else:
-            return random.choice(games)
+            if len(games) > suggest_count:
+                return random.sample(games, suggest_count)
+            else:
+                return games
 
     @db_session
     def get_guild_bans(self, guild: discord.Guild) -> List[str]:

@@ -127,3 +127,57 @@ class GameView(View):
             return
 
         await self.update_message(interaction, self.current_page + 1)
+
+
+class WhichGame(View):
+    def __init__(self, user_id: int, user_input: str, *games: list[str]):
+        super().__init__()
+        self.games = games
+        self.user_input = user_input
+        self.user_id = user_id
+        self.selection = None
+        self.add_item(Dropdown(user_id, user_input, games))
+
+    def embed(self) -> discord.Embed:
+        embed = discord.Embed(title="We couldn't find an exact match.\nDid you mean one of these?")
+        embed.add_field(name="Your Input", value=f"```\n{self.user_input}```", inline=False)
+        return embed
+
+
+class Dropdown(discord.ui.Select):
+    def __init__(self, user_id: int, user_input: str, games: list[str]):
+        self.user_id = user_id
+        self.user_input = user_input
+        options = []
+        for game in games:
+            options.append(discord.SelectOption(label=game, description="This One!"))
+        options.append(
+            discord.SelectOption(
+                label="None of These",
+                description="Not seeing your game? Try again, but be more specific.",
+                value="none",
+            )
+        )
+        options.append(
+            discord.SelectOption(label="Add Game", description="Not seeing your game? Add it anyway.", value="add")
+        )
+        super().__init__(placeholder="Choose Game", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("No touch!", ephemeral=True)
+            return
+        selection = self.values[0]
+        match selection:
+            case "none":
+                await interaction.response.send_message("We couldn't find this game. Try again.", ephemeral=True)
+            case "add":
+                self.view.selection = self.user_input
+                await interaction.response.send_message(f"Alright I'll add {self.user_input}", ephemeral=True)
+            case _:
+                self.view.selection = selection
+                await interaction.response.send_message(f"You selected {self.view.selection}.", ephemeral=True)
+        self.disabled = True
+        self.placeholder = self.view.selection
+        await interaction.message.edit(view=self.view)
+        self.view.stop()
