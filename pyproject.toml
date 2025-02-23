@@ -21,7 +21,7 @@ dev = [
   "pytest == 8.3.4",
   "coverage == 7.6.10", 
   "dpytest @ git+https://github.com/Javagedes/dpytest.git@master",
-  "requests==2.32.2"
+  "requests==2.32.3"
 ]
 
 [tool.coverage.run]
